@@ -1,0 +1,9 @@
+
+venv/
+.venv/
+
+# Ignore environment variable files
+.env
+
+# Node.js dependencies (if you have them)
+node_modules/
