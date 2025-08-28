@@ -9,7 +9,7 @@ mail = imp.IMAP4_SSL("imap.gmail.com")
 password="zkuf ffzp gwan hngs"
 
 
-def FindCostFromGivenDate(email1,dt="07-Aug-2025"):
+def FindCostFromGivenDate(email1,dt):
     reponse,data=mail.login(email1.strip(),password.strip()) 
     if(reponse!='OK'):
         print("Wrong Credentials ")
@@ -123,9 +123,9 @@ def FindCostFromGivenDate(email1,dt="07-Aug-2025"):
         return ans
     mail.logout()
 
-# dt1 = "07-Aug-2025"
-# dt1=(dt1.strip().strip("'").strip('"'))
-#FindCostFromGivenDate("adithreganti@gmail.com")
+dt1 = "20-Aug-2025"
+dt1=(dt1.strip().strip("'").strip('"'))
+FindCostFromGivenDate("adithreganti@gmail.com",dt1)
 
 
 
