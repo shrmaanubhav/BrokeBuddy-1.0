@@ -1,8 +1,8 @@
-import express from "express"
-import {protectRoute} from '../middleware/auth.middleware.js'
+import express from "express";
+import { protectRoute } from "../middleware/authMiddleware.js";
 import { getExpenses } from "../controllers/expense.conroller.js";
-const router = express.Router()
+const router = express.Router();
 
-router.post("/getExp",getExpenses);
+router.post("/getExp", getExpenses);
 
 export default router;
