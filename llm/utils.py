@@ -34,6 +34,7 @@ def FindCostFromGivenDate(email1,dt):
         print("No emails found.")
     else:
         AllCost =[]
+        transactions=[]
         DayWiseCost = {}
         TotalCost=0.0
         NC_Cost=0.0
@@ -91,20 +92,20 @@ def FindCostFromGivenDate(email1,dt):
                             continue
                         transac_ids.add(transac_id)
                         #print(Upi_id)
-                        if(Upi_id=='Q793458026@YBL'):
-                            NC_Cost+=cost
-                            Shop_name = "Night_Canteen"
-                        elif(Upi_id=='PAYTMQR65NEBI@PTYS' or Upi_id=='PAYTMQR281005050101OHZ7AF0MP5V0@'):
-                            Nescafe_Cost+=cost
-                            Shop_name = "Nescafe"
-                        elif(Upi_id=='PAYTMQR65MYTO@PTYS' or Upi_id=='PAYTMQR5ZIYAE@PTYS'):
-                            Gupta_cost+=cost
-                            Shop_name = "Gupta_Ji"
+                        # if(Upi_id=='Q793458026@YBL'):
+                        #     NC_Cost+=cost
+                        #     Shop_name = "Night_Canteen"
+                        # elif(Upi_id=='PAYTMQR65NEBI@PTYS' or Upi_id=='PAYTMQR281005050101OHZ7AF0MP5V0@'):
+                        #     Nescafe_Cost+=cost
+                        #     Shop_name = "Nescafe"
+                        # elif(Upi_id=='PAYTMQR65MYTO@PTYS' or Upi_id=='PAYTMQR5ZIYAE@PTYS'):
+                        #     Gupta_cost+=cost
+                        #     Shop_name = "Gupta_Ji"
                             
-                        elif(Upi_id=='8858420752'):
-                            Amul_cost+=cost
-                            Shop_name = "Amul"
-                        
+                        # elif(Upi_id=='8858420752'):
+                        #     Amul_cost+=cost
+                        #     Shop_name = "Amul"
+                        transactions.append({"COST":cost,"UPI_ID":Upi_id,"DEBITED":True})
                         AllCost.append(cost)
                         TotalCost+=cost
                         if dateP in DayWiseCost:
@@ -113,6 +114,31 @@ def FindCostFromGivenDate(email1,dt):
                             DayWiseCost[dateP] = cost
                       
                         break
+                    elif("CREDITED for Rs" in i):
+                        details = (i.split("CREDITED for Rs.")[1].split())
+                        cost = float(details[0].replace(",",""))
+                        Upi_id=details[1].upper()
+                        if(Upi_id[0]!='U'):
+                            continue
+                        
+                      
+                        Upi_id=Upi_id.split(':')[2].split("(")[0].split('-')[0]
+                       
+                    
+                        transac_id = details[1].split(':')[1]
+
+                      
+
+                        if(transac_id in transac_ids):
+                            continue
+                        transac_ids.add(transac_id)
+                        
+                        transactions.append({"COST":cost,"UPI_ID":Upi_id,"DEBITED":False})
+                        
+                      
+                        break
+                        
+
 
             else:
                  print("No plain text body found.")
@@ -122,18 +148,14 @@ def FindCostFromGivenDate(email1,dt):
         ans={
              "Transactions":len(AllCost),
              "Total":TotalCost,
-             "NC": NC_Cost,
-             "Amul":Amul_cost,
-             "Nescafe":Nescafe_Cost,
-             "Gupta":Gupta_cost,
-             "Juice": Juice_cost,
-             "DayWiseCost":DayWiseCost
+             "DayWiseCost":DayWiseCost,
+             "Transactions":transactions
         }
         print(json.dumps(ans))
         return ans
     mail.logout()
 
-dt1 = "20-Aug-2025"
+dt1 = "2-Oct-2025"
 dt1=(dt1.strip().strip("'").strip('"'))
 FindCostFromGivenDate("adithreganti@gmail.com",dt1)
 
