@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom"
-
+import './ExpensePage.css';
 const ExpensesPage = () => {
     const expenses = [
         {
@@ -52,7 +52,7 @@ const ExpensesPage = () => {
     const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0)
 
     return (
-        <div>
+        <div className="expenses-wrapper">
             {/* Navigation */}
             <nav className="nav">
                 <div className="container">

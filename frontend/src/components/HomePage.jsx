@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom"
-
+import './ExpensePage.css';
 const HomePage = () => {
     return (
         <div>

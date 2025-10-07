@@ -1,16 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-  <base href="/BrokeBuddy/">
-
-<head>
-  <meta charset="utf-8" />
-  <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#000000" />
-  <meta name="description" content="InboxSpend - AI-powered financial insights" />
-  <title>InboxSpend</title>
-  <!-- <style>
-    * {
+* {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
@@ -21,7 +9,8 @@
       background-color: #000000;
       color: #ffffff;
       line-height: 1.6;
-    }
+    } 
+    
 
     .container {
       max-width: 1200px;
@@ -383,12 +372,3 @@
         text-align: left;
       }
     }
-  </style> -->
-</head>
-
-<body>
-  <noscript>You need to enable JavaScript to run this app.</noscript>
-  <div id="root"></div>
-</body>
-
-</html>
