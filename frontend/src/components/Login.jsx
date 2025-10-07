@@ -2,22 +2,21 @@
 
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 import "./login.css";
 
-function Login() {
+function Login({ setIsAuthenticated }) {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [otp, setOtp] = useState("");
   const [newPass, setNewPass] = useState("");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const navigate = useNavigate();
   const BASE_URL = "http://localhost:4000/api/auth";
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Step 1 — Send OTP (Forgot Password)
   const sendOTP = async (e) => {
     e.preventDefault();
     try {
@@ -26,12 +25,10 @@ function Login() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: formData.email }),
       });
-
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.msg || "Error sending OTP");
       }
-
       alert("OTP sent to your email");
       setStep(2);
     } catch (err) {
@@ -54,7 +51,6 @@ function Login() {
         const errData = await res.json();
         throw new Error(errData.msg || "Invalid OTP");
       }
-
       alert("OTP verified successfully");
       setStep(3);
     } catch (err) {
@@ -77,7 +73,6 @@ function Login() {
         const errData = await res.json();
         throw new Error(errData.msg || "Failed to reset password");
       }
-
       alert("Password reset successfully");
       setStep(1);
     } catch (err) {
@@ -94,6 +89,7 @@ function Login() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
+        credentials: "include",
       });
 
       if (!res.ok) {
@@ -101,32 +97,20 @@ function Login() {
         throw new Error(errData.msg || "Login failed");
       }
 
-      const data = await res.json();
-    //   alert(data.msg || "Login successful");
-      setIsLoggedIn(true);
+      if (setIsAuthenticated) {
+        setIsAuthenticated(true);
+      }
       navigate("/homepage");
-
     } catch (err) {
       console.error(err.message);
       alert(err.message || "Login failed");
     }
   };
 
-  // Logout
-  const handleLogout = async () => {
-    try {
-      const res = await fetch(`${BASE_URL}/logout`, { method: "POST" });
-
-      if (!res.ok) {
-        throw new Error("Logout failed");
-      }
-
-      const data = await res.json();
-      alert(data.msg || "Logged out successfully");
-      setIsLoggedIn(false);
-    } catch (err) {
-      console.error(err.message);
-      alert(err.message || "Logout failed");
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    if (step === 1) {
+      handleSubmit(e);
     }
   };
 
@@ -138,10 +122,11 @@ function Login() {
         <h2 className="auth-title">Welcome Back</h2>
         <p className="auth-subtitle">Sign in or reset your password easily</p>
 
-        <form className="auth-form">
+        <form className="auth-form" onSubmit={handleFormSubmit}>
           {/* Step 1: Login */}
           {step === 1 && (
             <>
+              {/* Email and Password inputs */}
               <div className="form-group">
                 <label className="form-label">Email</label>
                 <input
@@ -166,23 +151,13 @@ function Login() {
                 />
               </div>
 
-              <button className="submit-button" onClick={handleSubmit}>
+              <button type="submit" className="submit-button">
                 Login
               </button>
 
-              <button className="submit-button" onClick={sendOTP}>
+              <button type="button" className="submit-button" onClick={sendOTP}>
                 Forgot Password
               </button>
-
-              {isLoggedIn && (
-                <button
-                  type="button"
-                  className="submit-button"
-                  onClick={handleLogout}
-                >
-                  Logout
-                </button>
-              )}
             </>
           )}
 
@@ -201,7 +176,12 @@ function Login() {
                 />
               </div>
 
-              <button className="submit-button" onClick={verifyOTP}>
+              <button
+                className="submit-button"
+                type="button"
+                onClick={verifyOTP}
+              >
+                {" "}
                 Verify OTP
               </button>
             </>
@@ -223,7 +203,12 @@ function Login() {
                 />
               </div>
 
-              <button className="submit-button" onClick={resetpass}>
+              <button
+                className="submit-button"
+                type="button"
+                onClick={resetpass}
+              >
+                {" "}
                 Reset Password
               </button>
             </>
