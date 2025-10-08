@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./signup.css";
 
 function Signup() {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: "",
@@ -97,6 +98,7 @@ function Signup() {
 
       alert("User registered successfully!");
       setStep(1);
+      navigate("/");
     } catch (err) {
       console.error(err.message);
       alert(err.message || "Error completing signup");
