@@ -13,13 +13,15 @@ from difflib import get_close_matches
 from rapidfuzz import process,fuzz
 #Extraction Functions-,extract_date_range(user_text, today=None)
 #parse_user_query(user_text, df, today=None)
-mail = imp.IMAP4_SSL("imap.gmail.com")
 
-
-password="zkuf ffzp gwan hngs"
 
 
 def FindCostFromGivenDate(email1,dt):
+    
+    mail = imp.IMAP4_SSL("imap.gmail.com")
+
+    password="zkuf ffzp gwan hngs"
+    
     reponse,data=mail.login(email1.strip(),password.strip()) 
     if(reponse!='OK'):
         print("Wrong Credentials ")
@@ -155,9 +157,9 @@ def FindCostFromGivenDate(email1,dt):
         return ans
     mail.logout()
 
-dt1 = "2-Oct-2025"
-dt1=(dt1.strip().strip("'").strip('"'))
-FindCostFromGivenDate("adithreganti@gmail.com",dt1)
+# dt1 = "2-Oct-2025"
+# dt1=(dt1.strip().strip("'").strip('"'))
+# FindCostFromGivenDate("adithreganti@gmail.com",dt1)
 
 
 
@@ -190,7 +192,7 @@ def extract_merchant(query):
         return merchant_list[idx] 
     return None
 
-print(extract_merchant("money sent to google"))
+# print(extract_merchant("money sent to google"))
         
 
 
