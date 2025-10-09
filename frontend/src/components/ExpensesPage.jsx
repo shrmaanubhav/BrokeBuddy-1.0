@@ -107,7 +107,6 @@ const ExpensesPage = () => {
             <p>Monitor and categorize your spending</p>
           </div>
 
-          {/* ✅ THIS IS THE SECTION THAT WAS MISSING */}
           <div className="stats-grid">
             <div className="stat-card">
               <div className="stat-header">
