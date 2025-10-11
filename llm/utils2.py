@@ -1,8 +1,8 @@
 
 from transformers import AutoModelForSequenceClassification,AutoTokenizer
 
-model= AutoModelForSequenceClassification.from_pretrained("intent_classifier_model")
-tokenizer = AutoTokenizer.from_pretrained("intent_classifier_model")
+model= AutoModelForSequenceClassification.from_pretrained("adith-regan/intent-classifier")
+tokenizer = AutoTokenizer.from_pretrained("adith-regan/intent-classifier")
 model.eval()
 
 def extract_action(query):
