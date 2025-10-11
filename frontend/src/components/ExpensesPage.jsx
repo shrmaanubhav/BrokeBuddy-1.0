@@ -4,57 +4,120 @@ import "./ExpensePage.css";
 
 const ExpensesPage = () => {
   const [expenses, setExpenses] = useState([]);
+  const [nicknames, setNicknames] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showAll, setShowAll] = useState(false);
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [inlineInputValue, setInlineInputValue] = useState("");
+
+  const userEmail = "adithreganti@gmail.com";
 
   useEffect(() => {
-    const fetchExpenses = async () => {
-      const requestBody = {
-        email: "adithreganti@gmail.com",
-        date: "7-Oct-2025",
-      };
+    const fetchData = async () => {
+      setIsLoading(true);
+      // --- ✅ 1. Get the date from 7 days ago ---
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7); // e.g., if today is Oct 11, this becomes Oct 4
 
+      // --- ✅ 2. Format it to match your backend's requirement (e.g., "4-Oct-2025") ---
+      const months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
+      const day = sevenDaysAgo.getDate();
+      const month = months[sevenDaysAgo.getMonth()];
+      const year = sevenDaysAgo.getFullYear();
+      const formattedStartDate = `${day}-${month}-${year}`; // Creates the string "4-Oct-2025"
+
+      // --- ✅ 3. Use this start date in the request body ---
+      const expenseRequestBody = { email: userEmail, date: formattedStartDate };
+      const nicknameRequestBody = { email: userEmail };
       try {
-        const response = await fetch(
-          "http://localhost:4000/api/expense/getExp",
-          {
+        const [expensesResponse, nicknamesResponse] = await Promise.all([
+          fetch("http://localhost:4000/api/expense/getExp", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(requestBody),
-          }
-        );
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(expenseRequestBody),
+          }),
+          fetch("http://localhost:4000/api/nicknames/get", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(nicknameRequestBody),
+          }),
+        ]);
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
+        if (!expensesResponse.ok || !nicknamesResponse.ok) {
+          throw new Error("Failed to fetch data from the server.");
         }
 
-        const data = await response.json();
-        console.log("API Response:", data);
+        const expensesData = await expensesResponse.json();
+        const nicknamesData = await nicknamesResponse.json();
 
-        if (Array.isArray(data.Transactions)) {
-          setExpenses(data.Transactions);
-        } else {
-          setExpenses([]);
-        }
+        setExpenses(expensesData.Transactions || []);
+        setNicknames(nicknamesData || {});
       } catch (e) {
         setError(e.message);
-        console.error("Failed to fetch expenses:", e);
+        console.error("Failed to fetch data:", e);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchExpenses();
+    fetchData();
   }, []);
 
-  const totalExpenses = expenses.reduce(
-    (sum, expense) => sum + (expense.COST || 0),
-    0
-  );
+  const handleStartEditing = (index, currentNickname) => {
+    setEditingIndex(index);
+    setInlineInputValue(currentNickname || "");
+  };
 
+  const handleSaveNickname = async (upiId, index) => {
+    const trimmedNickname = inlineInputValue.trim();
+    const updatedNicknames = { ...nicknames };
+
+    if (trimmedNickname) {
+      updatedNicknames[upiId] = trimmedNickname;
+    } else {
+      delete updatedNicknames[upiId];
+    }
+
+    setNicknames(updatedNicknames);
+    setEditingIndex(null);
+
+    try {
+      await fetch("http://localhost:4000/api/nicknames/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: userEmail,
+          upiId: upiId,
+          nickname: trimmedNickname,
+        }),
+      });
+    } catch (error) {
+      console.error("Failed to save nickname:", error);
+    }
+  };
+
+  const totalExpenses = expenses
+    .filter((expense) => expense.DEBITED)
+    .reduce((sum, expense) => sum + (expense.COST || 0), 0);
   const transactionCount = expenses.length;
+
+  const totalCredited = expenses
+    .filter((expense) => !expense.DEBITED)
+    .reduce((sum, expense) => sum + (expense.COST || 0), 0);
 
   if (isLoading) {
     return (
@@ -73,7 +136,7 @@ const ExpensesPage = () => {
         className="container"
         style={{ textAlign: "center", padding: "4rem", color: "#EF4444" }}
       >
-        <h2>Failed to load data </h2>
+        <h2>Failed to load data</h2>
         <p>
           Could not connect to the backend. Please ensure the Node.js server is
           running.
@@ -91,7 +154,7 @@ const ExpensesPage = () => {
         <div className="container">
           <div className="nav-content">
             <Link to="/" className="logo">
-              ⚡ InboxSpend
+              ⚡ BrokeBuddy
             </Link>
             <div className="nav-links">
               <button className="btn btn-outline">📥 Export</button>
@@ -115,8 +178,17 @@ const ExpensesPage = () => {
               </div>
               <div className="stat-value">Rs{totalExpenses.toFixed(2)}</div>
               <div className="stat-change">
-                <span style={{ color: "#EF4444" }}>📈</span> +8.2% from last
-                month
+                <span style={{ color: "#EF4444" }}>📈</span> Debited this week
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-header">
+                <span className="stat-title">Total Credited</span>
+                <span style={{ fontSize: "20px" }}>🤑</span>
+              </div>
+              <div className="stat-value">Rs{totalCredited.toFixed(2)}</div>
+              <div className="stat-change">
+                <span style={{ color: "#10B981" }}>📈</span> Credited this week
               </div>
             </div>
             <div className="stat-card">
@@ -126,7 +198,7 @@ const ExpensesPage = () => {
               </div>
               <div className="stat-value">{transactionCount}</div>
               <div className="stat-change">
-                <span style={{ color: "#10B981" }}>📉</span> -2 from last month
+                <span style={{ color: "#10B981" }}>📉</span> -2 from last week
               </div>
             </div>
             <div className="stat-card">
@@ -137,45 +209,144 @@ const ExpensesPage = () => {
               <div className="stat-value">5</div>
               <div className="stat-change">Active categories</div>
             </div>
-            <div className="stat-card">
-              <div className="stat-header">
-                <span className="stat-title">Avg. per Day</span>
-                <span style={{ fontSize: "20px" }}>📅</span>
-              </div>
-              <div className="stat-value">
-                Rs{(totalExpenses / 30).toFixed(2)}
-              </div>
-              <div className="stat-change">Based on 30 days</div>
-            </div>
           </div>
 
           <div className="expenses-list">
             <div className="expenses-header">
               <h2>Recent Expenses</h2>
               <p style={{ color: "#ccc", margin: 0 }}>
-                {transactionCount} transactions found
+                {transactionCount} transactions found for the last week
               </p>
             </div>
             <div className="expenses-content">
-              {expenses.map((expense, index) => (
-                <div key={index} className="expense-item">
-                  <div className="expense-left">
-                    <div className="expense-icon">📋</div>
-                    <div className="expense-details">
-                      <h4>{expense.UPI_ID || "N/A"}</h4>
-                      <div className="expense-meta">Transaction • Online</div>
-                    </div>
-                  </div>
-                  <div className="expense-right">
-                    <div className="expense-amount">
-                      {typeof expense.COST === "number"
-                        ? `-Rs${expense.COST.toFixed(2)}`
-                        : "Rs0.00"}
-                    </div>
-                    <div className="expense-category">Online Payment</div>
-                  </div>
-                </div>
-              ))}
+              {(() => {
+                const reversedExpenses = [...expenses].reverse();
+
+                const transactionsToShow = showAll
+                  ? reversedExpenses
+                  : reversedExpenses.slice(0, 10);
+
+                return (
+                  <>
+                    {transactionsToShow.map((expense, index) => {
+                      const nickname = nicknames[expense.UPI_ID];
+                      const isEditing = editingIndex === index;
+
+                      return (
+                        <div key={index} className="expense-item">
+                          <div className="expense-left">
+                            <div className="expense-icon">📋</div>
+                            <div className="expense-details">
+                              {isEditing ? (
+                                <div>
+                                  <div className="nickname-edit-view">
+                                    <input
+                                      type="text"
+                                      className="nickname-input"
+                                      value={inlineInputValue}
+                                      onChange={(e) =>
+                                        setInlineInputValue(e.target.value)
+                                      }
+                                      placeholder="Enter a nickname..."
+                                      autoFocus
+                                    />
+                                    <button
+                                      onClick={() =>
+                                        handleSaveNickname(
+                                          expense.UPI_ID,
+                                          index
+                                        )
+                                      }
+                                      className="edit-nickname-btn"
+                                      title="Save nickname"
+                                    >
+                                      💾
+                                    </button>
+                                  </div>
+                                  <p
+                                    className="expense-meta"
+                                    style={{ wordBreak: "break-all" }}
+                                  >
+                                    {expense.UPI_ID}
+                                  </p>
+                                </div>
+                              ) : (
+                                <div>
+                                  {nickname ? (
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "8px",
+                                      }}
+                                    >
+                                      <h4 style={{ margin: 0 }}>{nickname}</h4>
+                                      <button
+                                        onClick={() =>
+                                          handleStartEditing(index, nickname)
+                                        }
+                                        className="edit-nickname-btn"
+                                        title="Edit nickname"
+                                      >
+                                        ✏️
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div
+                                      className="nickname-placeholder"
+                                      onClick={() =>
+                                        handleStartEditing(index, "")
+                                      }
+                                    >
+                                      Add a nickname...
+                                    </div>
+                                  )}
+                                  <p
+                                    className="expense-meta"
+                                    style={{ wordBreak: "break-all" }}
+                                  >
+                                    {expense.UPI_ID}
+                                  </p>
+                                </div>
+                              )}
+                              <div className="expense-meta">
+                                Transaction • Online
+                              </div>
+                            </div>
+                          </div>
+                          <div className="expense-right">
+                            <div
+                              className={`expense-amount ${
+                                expense.DEBITED ? "debited" : "credited"
+                              }`}
+                            >
+                              {typeof expense.COST === "number"
+                                ? `${
+                                    expense.DEBITED ? "-" : "+"
+                                  }Rs${expense.COST.toFixed(2)}`
+                                : "Rs0.00"}
+                            </div>
+                            <div className="expense-category">
+                              Online Payment
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {expenses.length > 10 && (
+                      <div style={{ textAlign: "center", marginTop: "1.5rem" }}>
+                        <button
+                          onClick={() => setShowAll(!showAll)}
+                          className="btn btn-outline"
+                        >
+                          {showAll ? "Show Less" : "Show More"}
+                        </button>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>

@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import ConnectDB from "./db.js";
 import authRoutes from "./routes/auth.js";
 import expenseRoutes from "./routes/expense.routes.js";
+import nicknameRoutes from "./routes/nicknameRoutes.js";
 
 dotenv.config();
 
@@ -38,5 +39,6 @@ app.get("/", (req, res) => res.send("Backend is working!"));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/expense", expenseRoutes);
+app.use("/api/nicknames", nicknameRoutes);
 
 app.listen(4000, () => console.log("🚀 Server running on port 4000"));

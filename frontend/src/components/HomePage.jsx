@@ -23,7 +23,7 @@ const HomePage = ({ setIsAuthenticated }) => {
         <div className="container">
           <div className="nav-content">
             <Link to="/" className="logo">
-              ⚡ InboxSpend
+              ⚡ BrokeBuddy
             </Link>
             <div className="nav-links">
               <Link to="/expenses" className="nav-link">
@@ -43,7 +43,7 @@ const HomePage = ({ setIsAuthenticated }) => {
       <section className="hero">
         <div className="container">
           <div className="hero-icon">⚡</div>
-          <h1>InboxSpend</h1>
+          <h1>BrokeBuddy</h1>
           <p>AI-powered financial insights from your email transactions</p>
 
           <button
