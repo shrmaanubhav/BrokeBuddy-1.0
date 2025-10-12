@@ -215,3 +215,7 @@ def compare_periods(df,start1,end1,start2,end2):
     return {f'{start1} - {end1}':sum1,f'{start2} - {end2}':sum2}
 
 
+
+def add_expense_in_database(merchant,date,amount):
+    """ Append a new expense via express call. """
+    print("Adding expense:", merchant, date, amount)

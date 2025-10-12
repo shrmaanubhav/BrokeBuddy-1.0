@@ -1,6 +1,6 @@
 from langgraph.graph import StateGraph,START,END
 from dateparser import parse
-from langchain_groq import ChatGroq
+
 from langchain_core.output_parsers import StrOutputParser,PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
 from utils import *
@@ -9,113 +9,7 @@ from pydantic import BaseModel
 from typing import TypedDict,Optional,Any,Dict
 import datetime
 from dateutil.relativedelta import relativedelta
-
-MODEL = "llama-3.1-8b-instant"
-
-class Agent:
-    def __init__(self,name):
-        self.name=name
-
-    def extract_data(self,query):
-        #Will be overriden
-        return {}
-
-
-
-llm=ChatGroq(
-    model=MODEL,
-    api_key="REMOVED_GROQ_KEY",
-    temperature=0.1
-)
-
-class ExtractionResult(BaseModel):
-    merchant:Optional[str]
-    start_date:Optional[str]
-    end_date:Optional[str]
-
-parser = PydanticOutputParser(pydantic_object=ExtractionResult)
-
-extraction_prompt = PromptTemplate(
-    input_variables=["query", "today"],
-    partial_variables={"format_instructions":parser.get_format_instructions()},
-    template=(
-        """
-You are a precise extractor that identifies the merchant name and date range from the given user query.
-
-Use {today} as the reference for resolving relative dates (like "last week", "yesterday", "next month").
-
-{format_instructions}
-
-### Rules:
-1. Dates must be in the format **"D-Mon-YYYY"** (e.g., 1-Aug-2025,10-Oct-2024,5-Sep-2024).
-If year is not specified, assume current year.
-2. Handle both exact and relative date phrases.
-3. Convert relative time phrases into concrete date ranges based on {today}.
-4. If only one date is present, use the same date for both `start_date` and `end_date`.
-5. If only one date is present, use it for both start_date and end_date
-6.If no date, return null for both
-7.Output only the JSON object, nothing else.
-
-User query:
-{query}
-"""
-    )
-)
-
-
-extraction_chain = extraction_prompt|llm|parser
-
-
-
-
-
-class ExpenseAgent(Agent):
-    def __init__(self):
-        super().__init__("expenses")
-    
-    def extract_data(self, query,df,start,end,merchant):
-        
-        merchant_exp=0
-        filtered=df.copy()
-        total_expenses=0
-
-        if start is not None and end is not None:
-         filtered = filter_date(filtered, start, end)
-        elif start is not None:  # if only start provided
-            filtered = filtered[filtered["Date"] >= pd.to_datetime(start)]
-        elif end is not None:  # if only end provided
-            filtered = filtered[filtered["Date"] <= pd.to_datetime(end)]
-
-        total_expenses=get_total_spent(filtered)
-
-        if merchant!="all merchants":
-            print(merchant)
-            filtered = filtered[filtered['Name'].str.contains(merchant, case=False, na=False)]
-            merchant_exp=get_total_spent(filtered)
-            print(filtered)
-           
-        day_wise_spending_dict=day_wise_spending(filtered,start,end)
-        max_spent_day={}
-        min_spent_day={}
-        
-        if day_wise_spending_dict:
-            max_date=max(day_wise_spending_dict,key=day_wise_spending_dict.get)
-            max_value = day_wise_spending_dict[max_date]
-            max_spent_day[max_date]=max_value
-
-            min_date=min(day_wise_spending_dict,key=day_wise_spending_dict.get)
-            min_value = day_wise_spending_dict[min_date]
-            min_spent_day[min_date]=min_value
-
-
-        return {"action": "expenses",
-                "merchant_expense": merchant_exp,
-                "total":total_expenses,
-                "max_spent_day":max_spent_day,
-                "min_spent_day":min_spent_day,
-                "day_wise_spending": day_wise_spending(filtered, start, end)
-            }
-
+from agents.expense import ExpenseAgent
 
 
 
@@ -126,6 +20,7 @@ class ChatState(TypedDict):
     merchant:Optional[str]
     start_date:Optional[str]
     end_date:Optional[str]
+    amount:Optional[float]
     data:Optional[Dict[str,Any]]
     score:Optional[float]
 
@@ -193,12 +88,24 @@ def generate_node(chatbot,state:ChatState)->ChatState:
         merchant=state["merchant"]
         start_date=state["start_date"]
         end_date=state["end_date"]
-        chain = chatbot.response_chains[action]
-        history = chatbot.get_history_text()
-        resp = chain.invoke({"history":history,"query":query,"start_date":start_date,"end_date":end_date,"merchant":merchant,**data})
-        state['response']=resp
-        chatbot.add_to_history(query,resp,data)
-        return state
+        if(action=="expenses"):
+            res=handle_add_expense(query)
+            print("Handling add expense:",res)
+            if(res!=False):
+                amount=res.amount
+                date=res.date
+                merchant=res.merchant
+                add_expense_in_database(merchant,date,amount)
+                state['response']=f"Noted an expense of {amount} on {merchant} at {date}."
+                chatbot.add_to_history(query,state['response'],{"action":"add_expense","amount":amount,"merchant":merchant,"date":date})
+                return state
+            else:
+                chain = chatbot.response_chains[action]
+                history = chatbot.get_history_text()
+                resp = chain.invoke({"history":history,"query":query,"start_date":start_date,"end_date":end_date,"merchant":merchant,**data})
+                state['response']=resp
+                chatbot.add_to_history(query,resp,data)
+                return state
 
 
 
@@ -228,7 +135,7 @@ class ChatBot():
         #Initialize Model,parser
         #Prompts for different actions
 
-        self.llm=ChatGroq(model=MODEL,api_key="REMOVED_GROQ_KEY",temperature=0.1)
+        self.llm=llm
 
         self.parser=StrOutputParser()
        
@@ -266,10 +173,9 @@ class ChatBot():
     def merchant_date(self,query):
         response = extraction_chain.invoke({"query": query, "today": datetime.datetime.today().strftime("%-d-%b-%Y")})
         print("LLM response:", response)
-        # response=json.loads(response)
-        # response = parser.parse(response)
+        
         merchant=match_merchant_name(response.merchant) 
-        # print("Merchant", merchant)
+       
         start=response.start_date
         end=response.end_date
         return merchant,start,end
@@ -297,14 +203,14 @@ class ChatBot():
 
         graph.add_node("classify", lambda s:classify_action_node(s,self))
         graph.add_node("extract", lambda s: extract_data_node(self,s, df))
-        # graph.add_node("resolve", lambda s: resolve_context_node(self,s, df))
+      
         graph.add_node("generate", lambda s: generate_node(self,s))
 
 
         graph.add_edge(START,"classify")
         graph.add_edge("classify","extract")
         graph.add_edge("extract","generate")
-        # graph.add_edge("resolve","generate")
+        
         graph.add_edge("generate",END)
 
         return graph.compile()

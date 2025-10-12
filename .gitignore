@@ -4,6 +4,9 @@ venv/
 se
 # Ignore environment variable files
 .env
+
+llm/__pycache__
+llm/agents/__pycache__
 llm/intent_classifier_model
 # Node.js dependencies (if you have them)
 node_modules/
