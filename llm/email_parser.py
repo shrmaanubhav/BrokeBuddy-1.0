@@ -127,3 +127,5 @@ def FindCostFromGivenDate(email1,dt):
         print(json.dumps(ans))
         return ans
     mail.logout()
+
+print(FindCostFromGivenDate(email1="adithreganti@gmail.com",dt="7-Oct-2025"))
