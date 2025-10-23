@@ -11,7 +11,7 @@ const ExpensesPage = () => {
   const [editingIndex, setEditingIndex] = useState(null);
   const [inlineInputValue, setInlineInputValue] = useState("");
 
-  const userEmail = "adithreganti@gmail.com";
+  const userEmail = localStorage.getItem("userEmail");
 
   useEffect(() => {
     const fetchData = async () => {

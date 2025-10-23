@@ -96,7 +96,7 @@ function Login({ setIsAuthenticated }) {
         const errData = await res.json();
         throw new Error(errData.msg || "Login failed");
       }
-
+      localStorage.setItem("userEmail", data.email);
       if (setIsAuthenticated) {
         setIsAuthenticated(true);
       }

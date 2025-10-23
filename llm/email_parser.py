@@ -3,17 +3,18 @@ import email
 from bs4 import BeautifulSoup  
 import numpy as np
 import json
-
-def FindCostFromGivenDate(email1,dt):
-    password="zkuf ffzp gwan hngs"
+import datetime
+def FindCostFromGivenDate(email2,dt,end_date=datetime.datetime.today().strftime("%-d-%b-%Y")):
+    password="kmra bkok duqu hulm"
     mail = imp.IMAP4_SSL("imap.gmail.com")
+    email1="transacinboxspend@gmail.com"
     reponse,data=mail.login(email1.strip(),password.strip()) 
     if(reponse!='OK'):
         print("Wrong Credentials ")
     mail.select("inbox")
         
     date = dt
-    _, data = mail.search(None, f'(FROM "kblalerts@ktkbank.in" SINCE {date})')
+    _, data = mail.search(None, f'(TO {email2.strip()} SINCE {date} BEFORE {end_date})')
    
     email_ids = data[0].split()
 
@@ -52,6 +53,7 @@ def FindCostFromGivenDate(email1,dt):
                                 html = part.get_payload(decode=True).decode()
                                 soup = BeautifulSoup(html, "html.parser")
                                 body = soup.get_text(separator="\n", strip=True)  
+                                # print(body)
                         except:
                                 continue
 
@@ -124,6 +126,7 @@ def FindCostFromGivenDate(email1,dt):
              "DayWiseCost":DayWiseCost,
              "Transactions":transactions
         }
-        print(json.dumps(ans))
+        # print(json.dumps(ans))
         return ans
     mail.logout()
+print(FindCostFromGivenDate("adithreganti@gmail.com","15-Oct-2025","20-Oct-2025"))
