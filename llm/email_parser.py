@@ -3,8 +3,8 @@ import email
 from bs4 import BeautifulSoup  
 import numpy as np
 import json
-import datetime
-def FindCostFromGivenDate(email2,dt,end_date=datetime.datetime.today().strftime("%-d-%b-%Y")):
+from datetime import datetime, timedelta
+def FindCostFromGivenDate(email2,dt,end_date=(datetime.today()+timedelta(days=1)).strftime("%-d-%b-%Y")):
     password="kmra bkok duqu hulm"
     mail = imp.IMAP4_SSL("imap.gmail.com")
     email1="transacinboxspend@gmail.com"
@@ -129,4 +129,4 @@ def FindCostFromGivenDate(email2,dt,end_date=datetime.datetime.today().strftime(
         # print(json.dumps(ans))
         return ans
     mail.logout()
-print(FindCostFromGivenDate("adithreganti@gmail.com","15-Oct-2025","20-Oct-2025"))
+print(FindCostFromGivenDate("adithreganti@gmail.com","15-Oct-2025"))
