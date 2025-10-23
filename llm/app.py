@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Request
 # from langchain_groq import ChatGroq
 from pydantic.v1 import BaseModel
-from utils import FindCostFromGivenDate
+from email_parser import FindCostFromGivenDate
 app = FastAPI()
 
 app.add_middleware(

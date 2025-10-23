@@ -14,14 +14,14 @@ langgraph-checkpoint
 langgraph-prebuilt
 langgraph-sdk
 langsmith
-
-
+uvicorn
+fastapi
 pydantic
 pydantic_core
 python-dateutil
-
+pandas
 RapidFuzz
-
+bs4
 
 sentence-transformers
 
