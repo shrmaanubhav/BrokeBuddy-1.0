@@ -80,7 +80,7 @@ def FindCostFromGivenDate(email2,dt,end_date=(datetime.today()+timedelta(days=1)
                         if(transac_id in transac_ids):
                             continue
                         transac_ids.add(transac_id)
-                        transactions.append({"COST":cost,"UPI_ID":Upi_id,"DEBITED":True})
+                        transactions.append({"COST":cost,"UPI_ID":Upi_id,"DEBITED":True,"date":dateP})
                         AllCost.append(cost)
                         TotalCost+=cost
                         if dateP in DayWiseCost:
@@ -108,7 +108,7 @@ def FindCostFromGivenDate(email2,dt,end_date=(datetime.today()+timedelta(days=1)
                             continue
                         transac_ids.add(transac_id)
                         
-                        transactions.append({"COST":cost,"UPI_ID":Upi_id,"DEBITED":False})
+                        transactions.append({"COST":cost,"UPI_ID":Upi_id,"DEBITED":False,"date":dateP})
                         
                       
                         break
