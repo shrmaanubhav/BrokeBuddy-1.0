@@ -2,7 +2,7 @@
   box-sizing: border-box;
 }
 
-.auth-container {
+.login-container {
   min-height: 100vh;
   background: transparent;
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -13,7 +13,7 @@
 }
 
 /* --- CARD --- */
-.auth-card {
+.login-card {
   background: #1a1a1a;
   padding: 3rem 2.5rem;
   border-radius: 28px;
@@ -27,10 +27,10 @@
 }
 
 /* --- LOGO --- */
-.brand-logo {
+.login-logo {
   width: 60px;
   height: 60px;
-  background: linear-gradient(135deg, #535bf2 0%, #646cff 100%);
+  background: linear-gradient(135deg, #8b5cf6, #3b82f6);
   border-radius: 16px;
   margin-bottom: 2rem;
   display: flex;
@@ -39,11 +39,10 @@
   color: #fff;
   font-size: 2rem;
   font-weight: 700;
-  box-shadow: 0 2px 24px #646cff55;
 }
 
 /* --- TITLES --- */
-.auth-title {
+.login-title {
   color: #bfc2ff;
   font-size: 2.4rem;
   font-weight: 800;
@@ -53,8 +52,8 @@
   text-align: center;
 }
 
-.auth-subtitle {
-  color: #aab1ff;
+.login-subtitle {
+  color: #f4f3f0;
   font-size: 1.08rem;
   margin: 0 0 2.2rem 0;
   line-height: 1.5;
@@ -63,27 +62,27 @@
 }
 
 /* --- FORM --- */
-.auth-form {
+.login-form {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
   width: 100%;
 }
 
-.form-group {
+.login-group {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.form-label {
+.login-label {
   color: #8189ff;
   font-weight: 600;
   font-size: 1rem;
   letter-spacing: 0.025em;
 }
 
-.form-input {
+.login-input {
   padding: 1rem 1.1rem;
   border: 2px solid #646cff44;
   border-radius: 14px;
@@ -95,14 +94,14 @@
   font-weight: 500;
 }
 
-.form-input:focus {
+.login-input:focus {
   border-color: #646cff;
   background: #0c0c24;
   box-shadow: 0 0 0 3px #646cff33;
 }
 
 /* --- BUTTON --- */
-.submit-button {
+.login-button {
   padding: 1.1rem;
   background: linear-gradient(90deg, #535bf2 0%, #646cff 100%);
   color: #ffffff;
@@ -119,25 +118,25 @@
   text-align: center;
 }
 
-.submit-button:hover:not(:disabled) {
+.login-button:hover:not(:disabled) {
   background: linear-gradient(90deg, #747bff 0%, #535bf2 100%);
   transform: translateY(-2px) scale(1.03);
   box-shadow: 0 8px 32px #646cff55;
 }
 
-.submit-button:disabled {
+.login-button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
   transform: none;
 }
 
 /* --- LINKS --- */
-.auth-link {
+.login-link {
   text-align: center;
   margin-top: 2rem;
 }
 
-.auth-link a {
+.login-link a {
   color: #646cff;
   text-decoration: none;
   font-weight: 600;
@@ -146,13 +145,13 @@
   letter-spacing: 0.025em;
 }
 
-.auth-link a:hover {
+.login-link a:hover {
   color: #535bf2;
   text-decoration: underline;
 }
 
 /* --- ERROR --- */
-.error-message {
+.login-error {
   background: #0e0e2f;
   border: 1px solid #646cff;
   color: #b7baff;
@@ -166,32 +165,28 @@
 
 /* --- RESPONSIVE --- */
 @media (max-width: 768px) {
-  .auth-card {
+  .login-card {
     padding: 2rem 1rem;
     border-radius: 18px;
   }
-
-  .auth-title {
+  .login-title {
     font-size: 2rem;
   }
-
-  .form-input {
+  .login-input {
     padding: 1rem;
     font-size: 1rem;
   }
-
-  .submit-button {
+  .login-button {
     padding: 1rem;
     font-size: 1rem;
   }
 }
 
 @media (max-width: 480px) {
-  .auth-card {
+  .login-card {
     padding: 1.2rem 0.5rem;
   }
-
-  .auth-title {
+  .login-title {
     font-size: 1.3rem;
   }
 }

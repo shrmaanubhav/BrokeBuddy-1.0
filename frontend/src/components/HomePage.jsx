@@ -29,7 +29,9 @@ const HomePage = ({ setIsAuthenticated }) => {
               <Link to="/expenses" className="nav-link">
                 Expenses
               </Link>
-              <button className="btn btn-primary">🤖 AI Assistant</button>
+              <button className="btn btn-primary"> <Link to="/chatbot" className="nav-link">
+                🤖 AI Assistant
+              </Link></button>
 
               <button className="btn btn-primary" onClick={handleLogout}>
                 Logout

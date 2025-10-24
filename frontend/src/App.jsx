@@ -13,6 +13,7 @@ import HomePage from "./components/HomePage";
 import ExpensesPage from "./components/ExpensesPage";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
+import ChatBot from "./components/ChatBot";
 
 // Global Axios Configuration (Crucial for sending session cookies)
 axios.defaults.baseURL = "http://localhost:4000/api/auth";
@@ -68,7 +69,7 @@ function App() {
             element={<Login setIsAuthenticated={setIsAuthenticated} />}
           />
           <Route path="/signup" element={<Signup />} />
-
+          
           {/* Single Protected Routes Group */}
           <Route element={<ProtectedRoute isAuthenticated={isAuthenticated} />}>
             {/* The root path (/) is the default protected landing page */}
@@ -83,6 +84,10 @@ function App() {
             <Route
               path="/expenses"
               element={<ExpensesPage setIsAuthenticated={setIsAuthenticated} />}
+            />
+            <Route
+              path="/chatbot"
+              element={<ChatBot setIsAuthenticated={setIsAuthenticated} />}
             />
           </Route>
 

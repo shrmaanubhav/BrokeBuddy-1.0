@@ -1,8 +1,5 @@
-"use client";
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
 import "./login.css";
 
 function Login({ setIsAuthenticated }) {
@@ -13,9 +10,8 @@ function Login({ setIsAuthenticated }) {
   const [newPass, setNewPass] = useState("");
   const BASE_URL = "http://localhost:4000/api/auth";
 
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
 
   const sendOTP = async (e) => {
     e.preventDefault();
@@ -25,19 +21,14 @@ function Login({ setIsAuthenticated }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: formData.email }),
       });
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.msg || "Error sending OTP");
-      }
+      if (!res.ok) throw new Error((await res.json()).msg || "Error sending OTP");
       alert("OTP sent to your email");
       setStep(2);
     } catch (err) {
-      console.error(err.message);
       alert(err.message || "Error sending OTP");
     }
   };
 
-  // Step 2 — Verify OTP
   const verifyOTP = async (e) => {
     e.preventDefault();
     try {
@@ -46,21 +37,15 @@ function Login({ setIsAuthenticated }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: formData.email, OTP: otp }),
       });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.msg || "Invalid OTP");
-      }
+      if (!res.ok) throw new Error((await res.json()).msg || "Invalid OTP");
       alert("OTP verified successfully");
       setStep(3);
     } catch (err) {
-      console.error(err.message);
       alert(err.message || "Invalid OTP");
     }
   };
 
-  // Step 3 — Reset Password
-  const resetpass = async (e) => {
+  const resetPass = async (e) => {
     e.preventDefault();
     try {
       const res = await fetch(`${BASE_URL}/resetPass`, {
@@ -68,20 +53,14 @@ function Login({ setIsAuthenticated }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: formData.email, newPass }),
       });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.msg || "Failed to reset password");
-      }
+      if (!res.ok) throw new Error((await res.json()).msg || "Failed to reset password");
       alert("Password reset successfully");
       setStep(1);
     } catch (err) {
-      console.error(err.message);
       alert(err.message || "Failed to reset password");
     }
   };
 
-  // Step 1 — Login
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -91,131 +70,103 @@ function Login({ setIsAuthenticated }) {
         body: JSON.stringify(formData),
         credentials: "include",
       });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.msg || "Login failed");
-      }
+      if (!res.ok) throw new Error((await res.json()).msg || "Login failed");
       localStorage.setItem("userEmail", formData.email);
-      if (setIsAuthenticated) {
-        setIsAuthenticated(true);
-      }
+      setIsAuthenticated?.(true);
       navigate("/homepage");
     } catch (err) {
-      console.error(err.message);
       alert(err.message || "Login failed");
     }
   };
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    if (step === 1) {
-      handleSubmit(e);
-    }
+    if (step === 1) handleSubmit(e);
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <div className="brand-logo">⚡</div>
+    <div className="login-container">
+      <div className="login-card">
+        <div className="login-logo">⚡</div>
+        <h2 className="login-title">Welcome Back</h2>
+        <p className="login-subtitle">Sign in or reset your password easily</p>
 
-        <h2 className="auth-title">Welcome Back</h2>
-        <p className="auth-subtitle">Sign in or reset your password easily</p>
-
-        <form className="auth-form" onSubmit={handleFormSubmit}>
-          {/* Step 1: Login */}
+        <form className="login-form" onSubmit={handleFormSubmit}>
           {step === 1 && (
             <>
-              {/* Email and Password inputs */}
-              <div className="form-group">
-                <label className="form-label">Email</label>
+              <div className="login-group">
+                <label className="login-label">Email</label>
                 <input
                   name="email"
                   type="email"
-                  className="form-input"
+                  className="login-input"
                   placeholder="Enter your email"
                   onChange={handleChange}
                   required
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Password</label>
+              <div className="login-group">
+                <label className="login-label">Password</label>
                 <input
                   name="password"
                   type="password"
-                  className="form-input"
+                  className="login-input"
                   placeholder="Enter your password"
                   onChange={handleChange}
                   required
                 />
               </div>
 
-              <button type="submit" className="submit-button">
+              <button type="submit" className="login-button">
                 Login
               </button>
 
-              <button type="button" className="submit-button" onClick={sendOTP}>
+              <button type="button" className="login-button" onClick={sendOTP}>
                 Forgot Password
               </button>
             </>
           )}
 
-          {/* Step 2: OTP Verification */}
           {step === 2 && (
             <>
-              <div className="form-group">
-                <label className="form-label">Enter OTP</label>
+              <div className="login-group">
+                <label className="login-label">Enter OTP</label>
                 <input
                   type="text"
-                  name="otp"
-                  className="form-input"
-                  placeholder="Enter the OTP sent to your email"
+                  className="login-input"
+                  placeholder="Enter OTP sent to your email"
                   onChange={(e) => setOtp(e.target.value)}
                   required
                 />
               </div>
-
-              <button
-                className="submit-button"
-                type="button"
-                onClick={verifyOTP}
-              >
-                {" "}
+              <button className="login-button" type="button" onClick={verifyOTP}>
                 Verify OTP
               </button>
             </>
           )}
 
-          {/* Step 3: Reset Password */}
           {step === 3 && (
             <>
-              <div className="form-group">
-                <label className="form-label">New Password</label>
+              <div className="login-group">
+                <label className="login-label">New Password</label>
                 <input
                   type="password"
-                  name="newPass"
-                  className="form-input"
+                  className="login-input"
                   placeholder="Enter new password"
                   value={newPass}
                   onChange={(e) => setNewPass(e.target.value)}
                   required
                 />
               </div>
-
-              <button
-                className="submit-button"
-                type="button"
-                onClick={resetpass}
-              >
-                {" "}
+              <button className="login-button" type="button" onClick={resetPass}>
                 Reset Password
               </button>
             </>
           )}
         </form>
 
-        <div className="auth-link">
+        <div className="login-link">
           Don't have an account? <Link to="/signup">Signup here</Link>
         </div>
       </div>
