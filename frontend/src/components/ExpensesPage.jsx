@@ -10,72 +10,123 @@ const ExpensesPage = () => {
   const [showAll, setShowAll] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
   const [inlineInputValue, setInlineInputValue] = useState("");
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [searchStartDate, setSearchStartDate] = useState("");
+  const [searchEndDate, setSearchEndDate] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchActive, setIsSearchActive] = useState(false);
 
   const userEmail = localStorage.getItem("userEmail");
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      // --- ✅ 1. Get the date from 7 days ago ---
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7); // e.g., if today is Oct 11, this becomes Oct 4
+  const formatApiDate = (date) => {
+    const d = new Date(date);
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+    return `${d.getDate()}-${months[d.getMonth()]}-${d.getFullYear()}`;
+  };
 
-      // --- ✅ 2. Format it to match your backend's requirement (e.g., "4-Oct-2025") ---
-      const months = [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
-      ];
-      const day = sevenDaysAgo.getDate();
-      const month = months[sevenDaysAgo.getMonth()];
-      const year = sevenDaysAgo.getFullYear();
-      const formattedStartDate = `${day}-${month}-${year}`; // Creates the string "4-Oct-2025"
+  const fetchRecentData = async () => {
+    setIsLoading(true);
+    const expenseRequestBody = { email: userEmail };
+    const nicknameRequestBody = { email: userEmail };
 
-      // --- ✅ 3. Use this start date in the request body ---
-      const expenseRequestBody = { email: userEmail, date: formattedStartDate };
-      const nicknameRequestBody = { email: userEmail };
-      try {
-        const [expensesResponse, nicknamesResponse] = await Promise.all([
-          fetch("http://localhost:4000/api/expense/getExp", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(expenseRequestBody),
-          }),
-          fetch("http://localhost:4000/api/nicknames/get", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(nicknameRequestBody),
-          }),
-        ]);
+    try {
+      const [expensesResponse, nicknamesResponse] = await Promise.all([
+        fetch("http://localhost:4000/api/expense/getExp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(expenseRequestBody),
+        }),
+        fetch("http://localhost:4000/api/nicknames/get", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(nicknameRequestBody),
+        }),
+      ]);
 
-        if (!expensesResponse.ok || !nicknamesResponse.ok) {
-          throw new Error("Failed to fetch data from the server.");
-        }
-
-        const expensesData = await expensesResponse.json();
-        const nicknamesData = await nicknamesResponse.json();
-
-        setExpenses(expensesData.Transactions || []);
-        setNicknames(nicknamesData || {});
-      } catch (e) {
-        setError(e.message);
-        console.error("Failed to fetch data:", e);
-      } finally {
-        setIsLoading(false);
+      if (!expensesResponse.ok || !nicknamesResponse.ok) {
+        throw new Error("Failed to fetch data from the server.");
       }
+
+      const expensesData = await expensesResponse.json();
+      const nicknamesData = await nicknamesResponse.json();
+
+      setExpenses(expensesData.Transactions || []);
+      setNicknames(nicknamesData || {});
+      setIsSearchActive(false); // We are in the "recent" view
+    } catch (e) {
+      setError(e.message);
+      console.error("Failed to fetch data:", e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (userEmail) {
+      fetchRecentData();
+    }
+  }, [userEmail]);
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    if (!searchStartDate) {
+      alert("Please select a start date.");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    const searchPayload = {
+      email: userEmail,
+      startDate: formatApiDate(searchStartDate),
+      endDate: searchEndDate ? formatApiDate(searchEndDate) : null,
+      query: searchQuery,
     };
 
-    fetchData();
-  }, []);
+    try {
+      const response = await fetch("http://localhost:4000/api/expense/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(searchPayload),
+      });
+
+      if (!response.ok) {
+        throw new Error("Search request failed.");
+      }
+
+      const searchData = await response.json();
+      setExpenses(searchData.Transactions || []);
+      // search view
+      setIsSearchActive(true);
+      setIsSearchModalOpen(false);
+    } catch (e) {
+      setError(e.message);
+      console.error("Failed to search:", e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchStartDate("");
+    setSearchEndDate("");
+    setSearchQuery("");
+    fetchRecentData();
+  };
 
   const handleStartEditing = (index, currentNickname) => {
     setEditingIndex(index);
@@ -159,6 +210,12 @@ const ExpensesPage = () => {
             <div className="nav-links">
               <button className="btn btn-outline">📥 Export</button>
               <button className="btn btn-primary">➕ Add Expense</button>
+              <button
+                onClick={() => setIsSearchModalOpen(true)}
+                className="btn btn-primary"
+              >
+                🔍 Search
+              </button>
             </div>
           </div>
         </div>
@@ -211,11 +268,81 @@ const ExpensesPage = () => {
             </div>
           </div>
 
+          {isSearchModalOpen && (
+            <div className="modal-overlay">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h2>Search Expenses</h2>
+                  <button
+                    onClick={() => setIsSearchModalOpen(false)}
+                    className="modal-close-btn"
+                  >
+                    &times;
+                  </button>
+                </div>
+                <div className="search-bar">
+                  <form onSubmit={handleSearch} className="search-form">
+                    <div className="form-group">
+                      <label>Start Date*</label>
+                      <input
+                        type="date"
+                        value={searchStartDate}
+                        onChange={(e) => setSearchStartDate(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>End Date</label>
+                      <input
+                        type="date"
+                        value={searchEndDate}
+                        onChange={(e) => setSearchEndDate(e.target.value)}
+                        min={searchStartDate}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>UPI / Nickname</label>
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="e.g., PAYTM or Mom"
+                      />
+                    </div>
+                    <div className="form-actions">
+                      <button type="submit" className="btn btn-primary">
+                        Search
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsSearchModalOpen(false)}
+                        className="btn btn-outline"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="expenses-list">
             <div className="expenses-header">
-              <h2>Recent Expenses</h2>
+              <div className="expenses-header-title">
+                <h2>{isSearchActive ? "Search Results" : "Recent Expenses"}</h2>
+                {isSearchActive && (
+                  <button
+                    onClick={handleClearSearch}
+                    className="btn btn-outline clear-search-btn"
+                  >
+                    Clear Search
+                  </button>
+                )}
+              </div>
               <p style={{ color: "#ccc", margin: 0 }}>
-                {transactionCount} transactions found for the last week
+                {transactionCount} transactions found
+                {isSearchActive ? "" : " for the last 7 days"}
               </p>
             </div>
             <div className="expenses-content">
