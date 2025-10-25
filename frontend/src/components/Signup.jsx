@@ -13,12 +13,9 @@ function Signup() {
   });
   const [loading, setLoading] = useState(false);
 
-  // Handle input changes
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
 
-  // Step 1 - Send OTP
   const sendOTP = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -31,23 +28,16 @@ function Signup() {
           email: formData.email,
         }),
       });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.msg || "Error sending OTP");
-      }
-
+      if (!res.ok) throw new Error((await res.json()).msg || "Error sending OTP");
       alert("OTP sent to your email");
       setStep(2);
     } catch (err) {
-      console.error(err.message);
       alert(err.message || "Error sending OTP");
     } finally {
       setLoading(false);
     }
   };
 
-  // Step 2 - Verify OTP
   const verifyOTP = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -60,23 +50,16 @@ function Signup() {
           OTP: formData.otp,
         }),
       });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.msg || "Invalid OTP");
-      }
-
+      if (!res.ok) throw new Error((await res.json()).msg || "Invalid OTP");
       alert("OTP verified successfully");
       setStep(3);
     } catch (err) {
-      console.error(err.message);
       alert(err.message || "Invalid OTP");
     } finally {
       setLoading(false);
     }
   };
 
-  // Step 3 - Complete Signup
   const completeSignup = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -90,17 +73,12 @@ function Signup() {
           password: formData.password,
         }),
       });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.msg || "Error completing signup");
-      }
-
+      if (!res.ok)
+        throw new Error((await res.json()).msg || "Error completing signup");
       alert("User registered successfully!");
       setStep(1);
       navigate("/");
     } catch (err) {
-      console.error(err.message);
       alert(err.message || "Error completing signup");
     } finally {
       setLoading(false);
@@ -108,40 +86,40 @@ function Signup() {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <div className="brand-section">
-          <div className="brand-logo">₹</div>
+    <div className="signup-container">
+      <div className="signup-card">
+        <div className="signup-brand">
+          <div className="signup-logo">₹</div>
         </div>
 
-        <div className="auth-header">
-          <h2 className="auth-title">Create Account</h2>
-          <p className="auth-subtitle">
+        <div className="signup-header">
+          <h2 className="signup-title">Create Account</h2>
+          <p className="signup-subtitle">
             Join us and start your financial journey
           </p>
         </div>
 
-        <form className="auth-form">
+        <form className="signup-form">
           {step === 1 && (
             <>
-              <div className="form-group">
-                <label className="form-label">Full Name</label>
+              <div className="signup-group">
+                <label className="signup-label">Full Name</label>
                 <input
                   name="name"
                   type="text"
-                  className="form-input"
+                  className="signup-input"
                   placeholder="Enter your name"
                   onChange={handleChange}
                   required
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Email Address</label>
+              <div className="signup-group">
+                <label className="signup-label">Email Address</label>
                 <input
                   name="email"
                   type="email"
-                  className="form-input"
+                  className="signup-input"
                   placeholder="Enter your email"
                   onChange={handleChange}
                   required
@@ -149,7 +127,7 @@ function Signup() {
               </div>
 
               <button
-                className="submit-button"
+                className="signup-button"
                 onClick={sendOTP}
                 disabled={loading}
               >
@@ -160,12 +138,12 @@ function Signup() {
 
           {step === 2 && (
             <>
-              <div className="form-group">
-                <label className="form-label">Enter OTP</label>
+              <div className="signup-group">
+                <label className="signup-label">Enter OTP</label>
                 <input
                   name="otp"
                   type="text"
-                  className="form-input"
+                  className="signup-input"
                   placeholder="Enter the OTP sent to your email"
                   onChange={handleChange}
                   required
@@ -173,7 +151,7 @@ function Signup() {
               </div>
 
               <button
-                className="submit-button"
+                className="signup-button"
                 onClick={verifyOTP}
                 disabled={loading}
               >
@@ -184,12 +162,12 @@ function Signup() {
 
           {step === 3 && (
             <>
-              <div className="form-group">
-                <label className="form-label">Set Password</label>
+              <div className="signup-group">
+                <label className="signup-label">Set Password</label>
                 <input
                   name="password"
                   type="password"
-                  className="form-input"
+                  className="signup-input"
                   placeholder="Create your password"
                   onChange={handleChange}
                   required
@@ -197,7 +175,7 @@ function Signup() {
               </div>
 
               <button
-                className="submit-button"
+                className="signup-button"
                 onClick={completeSignup}
                 disabled={loading}
               >
@@ -207,7 +185,7 @@ function Signup() {
           )}
         </form>
 
-        <div className="auth-link">
+        <div className="signup-link">
           Already have an account? <Link to="/">Login here</Link>
         </div>
       </div>
