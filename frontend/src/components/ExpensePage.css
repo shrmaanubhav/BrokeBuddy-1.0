@@ -548,3 +548,195 @@ body {
   gap: 5px;
   margin-top: 2px;
 }
+
+.profile-section {
+  position: relative;
+}
+
+.profile-button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8b5cf6, #3b82f6);
+  color: white;
+  border: none;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 1rem; /* Add some space from other links */
+}
+
+.profile-dropdown {
+  position: absolute;
+  top: 130%; /* Adjust as needed */
+  right: 0;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 0.5rem;
+  width: 250px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  z-index: 110;
+  overflow: hidden;
+}
+
+.dropdown-header {
+  padding: 1rem;
+  border-bottom: 1px solid #333;
+  font-size: 0.9rem;
+  color: #ccc;
+}
+.dropdown-header strong {
+  color: white;
+  word-break: break-all;
+}
+
+.dropdown-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.dropdown-menu li button {
+  /* Style buttons inside list items */
+  display: block;
+  padding: 0.75rem 1rem;
+  color: #ccc;
+  text-decoration: none;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.dropdown-menu li button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.dropdown-menu hr {
+  border: none;
+  border-top: 1px solid #333;
+  margin: 0.25rem 0;
+}
+
+.delete-link {
+  /* Specifically target the delete button */
+  color: #ef4444 !important;
+}
+.delete-link:hover {
+  color: white !important;
+  background-color: #ef4444 !important;
+}
+
+/* Fix link inside button if needed */
+.nav-link-btn {
+  color: white; /* Ensure text color */
+  text-decoration: none;
+}
+.nav-link-btn:hover {
+  color: white; /* Keep color on hover */
+}
+
+/* ==================
+   MODAL STYLES
+   ================== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #1a1a1a;
+  border-radius: 1rem;
+  border: 1px solid #333;
+  width: 90%;
+  max-width: 500px; /* Adjust as needed */
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #333;
+}
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  color: #ccc;
+  font-size: 2rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  transition: color 0.2s;
+}
+.modal-close-btn:hover {
+  color: white;
+}
+
+.modal-form {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.modal-form .form-group {
+  /* Reuse existing form-group styles if possible */
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.modal-form .form-label {
+  /* Reuse existing form-label styles */
+  font-size: 0.875rem;
+  color: #ccc;
+  font-weight: 500;
+}
+
+.modal-form .form-input {
+  /* Reuse existing form-input styles */
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid #333;
+  color: white;
+  border-radius: 0.5rem;
+  padding: 0.75rem; /* Slightly larger padding for modals */
+  font-size: 1rem;
+  font-family: inherit;
+  width: 100%;
+}
+.modal-form .form-input:focus {
+  outline: none;
+  border-color: #8b5cf6;
+}
+
+.modal-form .form-actions {
+  /* Reuse existing form-actions styles */
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end; /* Align buttons to the right */
+  margin-top: 1rem;
+}
