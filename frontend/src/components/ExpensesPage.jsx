@@ -15,6 +15,13 @@ const ExpensesPage = () => {
   const [searchEndDate, setSearchEndDate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchActive, setIsSearchActive] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newExpenseData, setNewExpenseData] = useState({
+    nicknameOrUpiId: "",
+    amount: "",
+    debited: true,
+    date: "",
+  });
 
   const userEmail = localStorage.getItem("userEmail");
 
@@ -65,7 +72,7 @@ const ExpensesPage = () => {
 
       setExpenses(expensesData.Transactions || []);
       setNicknames(nicknamesData || {});
-      setIsSearchActive(false); // We are in the "recent" view
+      setIsSearchActive(false);
     } catch (e) {
       setError(e.message);
       console.error("Failed to fetch data:", e);
@@ -161,6 +168,107 @@ const ExpensesPage = () => {
     }
   };
 
+  const handleAddFormChange = (e) => {
+    const { name, value, type } = e.target;
+    if (name === "debited") {
+      setNewExpenseData((prevData) => ({
+        ...prevData,
+        debited: value === "true",
+      }));
+    } else {
+      setNewExpenseData((prevData) => ({
+        ...prevData,
+        [name]: value,
+      }));
+    }
+  };
+
+  const handleAddSubmit = async (e) => {
+    e.preventDefault();
+    if (
+      !newExpenseData.nicknameOrUpiId ||
+      !newExpenseData.amount ||
+      !newExpenseData.date
+    ) {
+      alert("Please fill in all required fields.");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    const payload = {
+      email: userEmail,
+      nicknameOrUpiId: newExpenseData.nicknameOrUpiId,
+      amount: newExpenseData.amount,
+      debited: newExpenseData.debited,
+      date: newExpenseData.date, // Send date as YYYY-MM-DD
+    };
+
+    console.log("Payload being sent:", payload);
+
+    try {
+      const response = await fetch("http://localhost:4000/api/expense/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to add transaction.");
+      }
+
+      setIsAddModalOpen(false);
+      setNewExpenseData({
+        nicknameOrUpiId: "",
+        amount: "",
+        debited: true,
+        date: "",
+      });
+      fetchRecentData();
+    } catch (err) {
+      console.log(error);
+      setError(err.message || "Failed to add transaction.");
+      console.error("Failed to add transaction:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this manual transaction?"
+      )
+    ) {
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        `http://localhost:4000/api/expense/delete/${id}`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: userEmail }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to delete transaction.");
+      }
+      alert("Transaction deleted successfully");
+      fetchRecentData();
+    } catch (err) {
+      setError(err.message || "Failed to delete transaction.");
+      console.error("Failed to delete transaction:", err);
+      setIsLoading(false);
+    }
+  };
+
   const totalExpenses = expenses
     .filter((expense) => expense.DEBITED)
     .reduce((sum, expense) => sum + (expense.COST || 0), 0);
@@ -209,7 +317,12 @@ const ExpensesPage = () => {
             </Link>
             <div className="nav-links">
               <button className="btn btn-outline">📥 Export</button>
-              <button className="btn btn-primary">➕ Add Expense</button>
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="btn btn-primary"
+              >
+                ➕ Add Expense
+              </button>
               <button
                 onClick={() => setIsSearchModalOpen(true)}
                 className="btn btn-primary"
@@ -327,6 +440,96 @@ const ExpensesPage = () => {
             </div>
           )}
 
+          {isAddModalOpen && (
+            <div className="modal-overlay">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h2>Add Manual Transaction</h2>
+                  <button
+                    onClick={() => setIsAddModalOpen(false)}
+                    className="modal-close-btn"
+                  >
+                    &times;
+                  </button>
+                </div>
+                <div className="add-expense-form-container">
+                  <form onSubmit={handleAddSubmit} className="add-expense-form">
+                    <div className="form-group">
+                      <label>Nickname / UPI ID*</label>
+                      <input
+                        type="text"
+                        name="nicknameOrUpiId"
+                        value={newExpenseData.nicknameOrUpiId}
+                        onChange={handleAddFormChange}
+                        placeholder="Enter Nickname or UPI ID"
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Amount*</label>
+                      <input
+                        type="number"
+                        name="amount"
+                        value={newExpenseData.amount}
+                        onChange={handleAddFormChange}
+                        placeholder="e.g., 50.00"
+                        required
+                        step="0.01"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Date*</label>
+                      <input
+                        type="date"
+                        name="date"
+                        value={newExpenseData.date}
+                        onChange={handleAddFormChange}
+                        required
+                      />
+                    </div>
+                    <div className="form-group radio-group">
+                      <label>Type:</label>
+                      <div>
+                        <input
+                          type="radio"
+                          id="debitRadio"
+                          name="debited"
+                          value="true"
+                          checked={newExpenseData.debited === true}
+                          onChange={handleAddFormChange}
+                        />
+                        <label htmlFor="debitRadio">Debit (-)</label>
+                      </div>
+                      <div>
+                        <input
+                          type="radio"
+                          id="creditRadio"
+                          name="debited"
+                          value="false"
+                          checked={newExpenseData.debited === false}
+                          onChange={handleAddFormChange}
+                        />
+                        <label htmlFor="creditRadio">Credit (+)</label>
+                      </div>
+                    </div>
+                    <div className="form-actions">
+                      <button type="submit" className="btn btn-primary">
+                        Save Transaction
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsAddModalOpen(false)}
+                        className="btn btn-outline"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="expenses-list">
             <div className="expenses-header">
               <div className="expenses-header-title">
@@ -347,17 +550,25 @@ const ExpensesPage = () => {
             </div>
             <div className="expenses-content">
               {(() => {
-                const reversedExpenses = [...expenses].reverse();
+                // const reversedExpenses = [...expenses].reverse();
 
                 const transactionsToShow = showAll
-                  ? reversedExpenses
-                  : reversedExpenses.slice(0, 10);
+                  ? expenses
+                  : expenses.slice(0, 10);
 
                 return (
                   <>
                     {transactionsToShow.map((expense, index) => {
                       const nickname = nicknames[expense.UPI_ID];
                       const isEditing = editingIndex === index;
+
+                      const formattedDate = new Date(
+                        expense.date
+                      ).toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      });
 
                       return (
                         <div key={index} className="expense-item">
@@ -437,7 +648,7 @@ const ExpensesPage = () => {
                                 </div>
                               )}
                               <div className="expense-meta">
-                                Transaction • Online
+                                {formattedDate}
                               </div>
                             </div>
                           </div>
@@ -453,8 +664,19 @@ const ExpensesPage = () => {
                                   }Rs${expense.COST.toFixed(2)}`
                                 : "Rs0.00"}
                             </div>
-                            <div className="expense-category">
-                              Online Payment
+                            <div className="expense-right-bottom">
+                              <div className="expense-category">
+                                {expense.isManual ? "Manual" : "Online"}
+                              </div>
+                              {expense.isManual && (
+                                <button
+                                  onClick={() => handleDelete(expense._id)}
+                                  className="delete-btn"
+                                  title="Delete manual transaction"
+                                >
+                                  🗑️
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>
