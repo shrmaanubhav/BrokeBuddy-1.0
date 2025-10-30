@@ -13,7 +13,7 @@ const HomePage = ({ setIsAuthenticated }) => {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
-  const [newUsername, setNewUsername] = useState("");
+  const [newName, setNewName] = useState("");
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -89,45 +89,41 @@ const HomePage = ({ setIsAuthenticated }) => {
     }
   };
 
-  const handleChangeUsername = async (e) => {
+  const handleChangeName = async (e) => {
     e.preventDefault();
-    if (!newUsername.trim()) {
-      alert("Please enter a new username.");
+    if (!newName.trim()) {
+      alert("Please enter a new name.");
       return;
     }
-
     try {
       const userEmail = localStorage.getItem("userEmail");
       if (!userEmail) {
         alert("User not logged in.");
         return;
       }
-
-      const res = await fetch("http://localhost:4000/api/profile/username", {
+      const res = await fetch("http://localhost:4000/api/profile/name", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: userEmail,
-          newUsername: newUsername.trim(),
+          newName: newName.trim(),
         }),
         credentials: "include",
       });
 
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.msg || "Failed to change username");
+        throw new Error(errData.msg || "Failed to change name");
       }
-
       const data = await res.json();
-      alert("Username changed successfully!");
-      setNewUsername("");
+      alert("Name changed successfully!");
+      setNewName("");
       setIsChangeUserModalOpen(false);
     } catch (err) {
-      console.error("Change Username Error:", err.message);
-      alert(err.message || "Failed to change username");
+      console.error("Change Name Error:", err.message);
+      alert(err.message || "Failed to change name");
     }
   };
-
   const handleDeleteAccount = async (e) => {
     e.preventDefault();
 
@@ -264,13 +260,13 @@ const HomePage = ({ setIsAuthenticated }) => {
                 &times;
               </button>
             </div>
-            <form onSubmit={handleChangeUsername} className="modal-form">
+            <form onSubmit={handleChangeName} className="modal-form">
               <div className="form-group">
                 <label>New Username</label>
                 <input
                   type="text"
-                  value={newUsername}
-                  onChange={(e) => setNewUsername(e.target.value)}
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
                   placeholder="Enter new username"
                   required
                   className="form-input"

@@ -3,31 +3,28 @@ import Nickname from "../models/Nickname.js";
 import manualTransaction from "../models/manualTransaction.js";
 import bcrypt from "bcrypt";
 
-export const changeUsername = async (req, res) => {
-  const { email, newUsername } = req.body;
+export const changeName = async (req, res) => {
+  const { newName } = req.body;
   const userId = req.user._id;
-
-  if (!newUsername || newUsername.trim() === "") {
-    return res.status(400).json({ msg: "New username cannot be empty." });
+  if (!newName || newName.trim() === "") {
+    return res.status(400).json({ msg: "New name cannot be empty." });
   }
-
   try {
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ msg: "User not found." });
     }
 
-    user.username = newUsername.trim();
+    user.name = newName.trim();
     await user.save();
-
     res
       .status(200)
-      .json({ msg: "Username updated successfully.", username: user.username });
+      .json({ msg: "Name updated successfully.", name: user.name });
   } catch (error) {
-    console.error("Change Username Error:", error);
+    console.error("Change Name Error:", error);
     res
       .status(500)
-      .json({ msg: "Server error updating username.", error: error.message });
+      .json({ msg: "Server error updating name.", error: error.message });
   }
 };
 
