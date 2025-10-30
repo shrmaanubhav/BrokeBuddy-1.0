@@ -113,7 +113,7 @@ add_expense_prompt = PromptTemplate(
     partial_variables={"format_instructions":parser2.get_format_instructions()},
     template=(
         """ 
-        Extract the amount, merchant name, and date from the user query for adding an expense.
+        Extract the amount(Rs), merchant name, and date from the user query for adding an expense.
         Provide the output in the format:
         {format_instructions}
        

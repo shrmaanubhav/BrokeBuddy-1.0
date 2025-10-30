@@ -147,7 +147,7 @@ class ChatBot():
     ],
     template=(
         "You are a financial assistant.\n\n"
-       
+        "Everything in Indian Rs.\n\n"
         "History: {history}\n\n"
         "User query: {query}\n\n"
         "Facts:\n"
@@ -161,7 +161,7 @@ class ChatBot():
         "- Lowest spending day: {min_spent_day}\n\n"
         "Instructions:\n"
         "1. Always distinguish between total expenses and merchant expenses.\n"
-        "2. Clearly report both values with units (e.g., $).\n"
+        "2. Clearly report both values with unit-Rs(Rupees).\n"
         "3. Mention merchant share % of total.\n"
         "4. Summarize spending trends (high/low days, spikes) if multiple days exist.\n"
         "5. If only one merchant transaction, phrase it as 'one transaction of X on Y'.\n"
@@ -225,24 +225,24 @@ class ChatBot():
 
 
 
-if __name__ == "__main__":
-    import pandas as pd
+# if __name__ == "__main__":
+#     import pandas as pd
 
-    df = pd.read_json("data_array.json")
+#     df = pd.read_json("data_array.json")
 
-    chatbot = ChatBot()
-    chatbot.initialize()
+#     chatbot = ChatBot()
+#     chatbot.initialize()
 
-    print(" LangGraph Financial Assistant ready!")
+#     print(" LangGraph Financial Assistant ready!")
 
-    while True:
-        query = input("You: ")
-        if query.lower() in ["exit", "quit"]:
-            print("Assistant: Goodbye 👋")
-            break
+#     while True:
+#         query = input("You: ")
+#         if query.lower() in ["exit", "quit"]:
+#             print("Assistant: Goodbye 👋")
+#             break
 
-        response = chatbot.respond_using_graph(df, query)
-        print(f"Assistant: {response}\n")
+#         response = chatbot.respond_using_graph(df, query)
+#         print(f"Assistant: {response}\n")
     #print(ext("How much did i spend on Suraj last week?"))
 
     #print(extract_merchant("How much have i spent on zepto last month"))

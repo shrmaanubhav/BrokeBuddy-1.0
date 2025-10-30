@@ -19,7 +19,7 @@ export default function ChatBot() {
 
   const handleInputChange = (e) => setInputValue(e.target.value);
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
 
@@ -28,20 +28,33 @@ export default function ChatBot() {
       text: inputValue,
       sender: "user",
     };
-
     setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
-
     setIsTyping(true);
-    setTimeout(() => {
-      const botResponse = {
-        id: Date.now() + 1,
-        text: "Thank you for your message! I'm processing your request.",
-        sender: "bot",
-      };
-      setMessages((prev) => [...prev, botResponse]);
+    try {
+      const resp = await fetch('http://localhost:8000/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query: inputValue }),
+    })
+    const data = await resp.json();
+    const chatResp= data.response
+    console.log("Response from backend:", chatResp);
+    const botResponse = {
+      id: Date.now() + 1,
+      text: chatResp,
+      sender: "bot",
+    };
+
+    setMessages((prev) => [...prev, botResponse]);
+    } catch (error) {
+      console.error("Error talking to backend:", error);
+    }
+    finally{
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   return (
