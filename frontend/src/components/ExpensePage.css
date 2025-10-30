@@ -142,6 +142,15 @@ body {
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
+h5 {
+  font-size: clamp(1rem, 2.3vw, 2rem);
+  font-weight: 800;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #ffffff, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
 
 .hero p {
   font-size: 1.25rem;

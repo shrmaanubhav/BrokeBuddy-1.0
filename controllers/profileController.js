@@ -3,6 +3,23 @@ import Nickname from "../models/Nickname.js";
 import manualTransaction from "../models/manualTransaction.js";
 import bcrypt from "bcrypt";
 
+export const getMyProfile = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const user = await User.findById(userId).select("-password");
+
+    if (!user) {
+      return res.status(404).json({ msg: "User not found." });
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("Get Profile Error:", error);
+    res
+      .status(500)
+      .json({ msg: "Server error fetching profile.", error: error.message });
+  }
+};
+
 export const changeName = async (req, res) => {
   const { newName } = req.body;
   const userId = req.user._id;

@@ -21,7 +21,8 @@ function Login({ setIsAuthenticated }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: formData.email }),
       });
-      if (!res.ok) throw new Error((await res.json()).msg || "Error sending OTP");
+      if (!res.ok)
+        throw new Error((await res.json()).msg || "Error sending OTP");
       alert("OTP sent to your email");
       setStep(2);
     } catch (err) {
@@ -53,7 +54,8 @@ function Login({ setIsAuthenticated }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: formData.email, newPass }),
       });
-      if (!res.ok) throw new Error((await res.json()).msg || "Failed to reset password");
+      if (!res.ok)
+        throw new Error((await res.json()).msg || "Failed to reset password");
       alert("Password reset successfully");
       setStep(1);
     } catch (err) {
@@ -70,8 +72,14 @@ function Login({ setIsAuthenticated }) {
         body: JSON.stringify(formData),
         credentials: "include",
       });
-      if (!res.ok) throw new Error((await res.json()).msg || "Login failed");
-      localStorage.setItem("userEmail", formData.email);
+
+      const userData = await res.json();
+      if (!res.ok) {
+        throw new Error(userData.msg || "Login failed");
+      }
+      localStorage.setItem("userEmail", userData.email);
+      localStorage.setItem("name", userData.name);
+
       setIsAuthenticated?.(true);
       navigate("/homepage");
     } catch (err) {
@@ -140,7 +148,11 @@ function Login({ setIsAuthenticated }) {
                   required
                 />
               </div>
-              <button className="login-button" type="button" onClick={verifyOTP}>
+              <button
+                className="login-button"
+                type="button"
+                onClick={verifyOTP}
+              >
                 Verify OTP
               </button>
             </>
@@ -159,7 +171,11 @@ function Login({ setIsAuthenticated }) {
                   required
                 />
               </div>
-              <button className="login-button" type="button" onClick={resetPass}>
+              <button
+                className="login-button"
+                type="button"
+                onClick={resetPass}
+              >
                 Reset Password
               </button>
             </>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import "./ExpensePage.css";
 const HomePage = ({ setIsAuthenticated }) => {
   const navigate = useNavigate();
+  const [name, setName] = useState("");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const userEmail = localStorage.getItem("userEmail") || "";
 
@@ -14,6 +15,31 @@ const HomePage = ({ setIsAuthenticated }) => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [newName, setNewName] = useState("");
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const res = await fetch("http://localhost:4000/api/profile/me", {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        });
+
+        if (!res.ok) {
+          throw new Error("Could not fetch profile");
+        }
+
+        const userData = await res.json();
+        setName(userData.name);
+      } catch (error) {
+        console.error("Failed to fetch user profile:", error);
+      }
+    };
+
+    if (userEmail) {
+      fetchUserProfile();
+    }
+  }, [userEmail]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -31,6 +57,8 @@ const HomePage = ({ setIsAuthenticated }) => {
     try {
       const res = await axios.post("http://localhost:4000/api/auth/logout");
       alert(res.data.msg || "Logged out");
+      localStorage.removeItem("userEmail");
+      localStorage.removeItem("name");
       setIsAuthenticated(false);
       navigate("/");
     } catch (err) {
@@ -359,6 +387,8 @@ const HomePage = ({ setIsAuthenticated }) => {
           <div className="hero-icon">⚡</div>
           <h1>BrokeBuddy</h1>
           <p>AI-powered financial insights from your email transactions</p>
+
+          <h5>Welcome, {name || "Buddy"}</h5>
 
           <button
             className="btn btn-primary"
