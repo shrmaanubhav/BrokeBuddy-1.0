@@ -1,8 +1,29 @@
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
 import "./ExpensePage.css";
 
+const CACHE_KEY = "transactions_cache";
+const CACHE_TIME_KEY = "transactions_time";
+const CACHE_DURATION = 30 * 60 * 1000;
+
+const loadCache = () => {
+  const data = localStorage.getItem(CACHE_KEY);
+  const time = localStorage.getItem(CACHE_TIME_KEY);
+
+  if (!data || !time) return null;
+  if (Date.now() - Number(time) > CACHE_DURATION) return null;
+
+  return JSON.parse(data);
+};
+
+const saveCache = (transactions) => {
+  localStorage.setItem(CACHE_KEY, JSON.stringify(transactions));
+  localStorage.setItem(CACHE_TIME_KEY, Date.now());
+};
+
 const ExpensesPage = () => {
+  const [cachedTransactions, setCachedTransactions] = useState([]);
+
   const [expenses, setExpenses] = useState([]);
   const [nicknames, setNicknames] = useState({});
   const [isLoading, setIsLoading] = useState(true);
@@ -25,6 +46,21 @@ const ExpensesPage = () => {
 
   const userEmail = localStorage.getItem("userEmail");
 
+  useEffect(() => {
+    if (!userEmail) return;
+
+    const cached = loadCache();
+    if (cached) {
+      console.log("✅ Using cached transactions from localStorage");
+      setExpenses(cached);
+      setCachedTransactions(cached);
+      setIsLoading(false);
+    } else {
+      console.log("⚠ No cache found, fetching from backend...");
+      fetchRecentData();
+    }
+  }, [userEmail]);
+
   const formatApiDate = (date) => {
     const d = new Date(date);
     const months = [
@@ -46,49 +82,30 @@ const ExpensesPage = () => {
 
   const fetchRecentData = async () => {
     setIsLoading(true);
-    const expenseRequestBody = { email: userEmail };
-    const nicknameRequestBody = { email: userEmail };
-
     try {
-      const [expensesResponse, nicknamesResponse] = await Promise.all([
-        fetch("http://localhost:4000/api/expense/getExp", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(expenseRequestBody),
-        }),
-        fetch("http://localhost:4000/api/nicknames/get", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(nicknameRequestBody),
-        }),
-      ]);
+      const response = await fetch("http://localhost:4000/api/expense/getExp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: userEmail }),
+      });
 
-      if (!expensesResponse.ok || !nicknamesResponse.ok) {
-        throw new Error("Failed to fetch data from the server.");
-      }
+      if (!response.ok) throw new Error("Failed to fetch expenses");
 
-      const expensesData = await expensesResponse.json();
-      const nicknamesData = await nicknamesResponse.json();
-
-      setExpenses(expensesData.Transactions || []);
-      setNicknames(nicknamesData || {});
-      setIsSearchActive(false);
-    } catch (e) {
-      setError(e.message);
-      console.error("Failed to fetch data:", e);
+      const data = await response.json();
+      setExpenses(data.Transactions || []);
+      setCachedTransactions(data.Transactions || []);
+      saveCache(data.Transactions || []); // <-- persist to localStorage
+    } catch (err) {
+      setError(err.message);
+      console.error(err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (userEmail) {
-      fetchRecentData();
-    }
-  }, [userEmail]);
-
   const handleSearch = async (e) => {
     e.preventDefault();
+
     if (!searchStartDate) {
       alert("Please select a start date.");
       return;
@@ -96,6 +113,58 @@ const ExpensesPage = () => {
 
     setIsLoading(true);
     setError(null);
+
+    const today = new Date();
+    const start = new Date(searchStartDate);
+    const diffDays = Math.floor((today - start) / (1000 * 60 * 60 * 24));
+
+    if (diffDays <= 7 && cachedTransactions.length > 0) {
+      console.log("✅ Search is within 7 days — checking cache...");
+
+      const convertDisplayToISO = (dateStr) => {
+        const [day, monthName, year] = dateStr.split("-");
+        const dateObj = new Date(`${day}-${monthName}-${year}`);
+        return dateObj.toISOString().split("T")[0];
+      };
+
+      const startISO = new Date(searchStartDate).toISOString().split("T")[0];
+      const endISO = searchEndDate
+        ? new Date(searchEndDate).toISOString().split("T")[0]
+        : today.toISOString().split("T")[0];
+
+      const filtered = cachedTransactions.filter((t) => {
+        const txnISO = convertDisplayToISO(t.date);
+        const matchDate = txnISO >= startISO && txnISO <= endISO;
+        const matchQuery = (() => {
+          if (!searchQuery) return true;
+
+          const query = searchQuery.toLowerCase();
+
+          const upi = (t.UPI_ID || t.nicknameOrUpiId || "").toLowerCase();
+          const desc = (t.description || "").toLowerCase();
+          const amt = (t.COST?.toString() || "").toLowerCase();
+
+          return (
+            upi.includes(query) || desc.includes(query) || amt.includes(query)
+          );
+        })();
+
+        return matchDate && matchQuery;
+      });
+
+      if (filtered.length > 0) {
+        console.log("✅ Using cached results");
+        setExpenses(filtered);
+        setIsSearchActive(true);
+        setIsSearchModalOpen(false);
+        setIsLoading(false);
+        return;
+      }
+
+      console.log("No Cache — calling backend");
+    } else {
+      console.log("cache empty — calling backend");
+    }
 
     const searchPayload = {
       email: userEmail,
@@ -111,19 +180,17 @@ const ExpensesPage = () => {
         body: JSON.stringify(searchPayload),
       });
 
-      if (!response.ok) {
-        throw new Error("Search request failed.");
-      }
+      if (!response.ok) throw new Error("Search request failed.");
 
       const searchData = await response.json();
       setExpenses(searchData.Transactions || []);
-      // search view
       setIsSearchActive(true);
       setIsSearchModalOpen(false);
     } catch (e) {
       setError(e.message);
       console.error("Failed to search:", e);
     } finally {
+      console.log("=== SEARCH DEBUG END (BACKEND CALL) ===");
       setIsLoading(false);
     }
   };
@@ -132,7 +199,13 @@ const ExpensesPage = () => {
     setSearchStartDate("");
     setSearchEndDate("");
     setSearchQuery("");
-    fetchRecentData();
+    const cached = loadCache();
+    if (cached) {
+      setExpenses(cached);
+      setIsSearchActive(false);
+    } else {
+      fetchRecentData();
+    }
   };
 
   const handleStartEditing = (index, currentNickname) => {
@@ -202,10 +275,8 @@ const ExpensesPage = () => {
       nicknameOrUpiId: newExpenseData.nicknameOrUpiId,
       amount: newExpenseData.amount,
       debited: newExpenseData.debited,
-      date: newExpenseData.date, // Send date as YYYY-MM-DD
+      date: newExpenseData.date,
     };
-
-    console.log("Payload being sent:", payload);
 
     try {
       const response = await fetch("http://localhost:4000/api/expense/add", {
@@ -225,9 +296,9 @@ const ExpensesPage = () => {
         debited: true,
         date: "",
       });
+
       fetchRecentData();
     } catch (err) {
-      console.log(error);
       setError(err.message || "Failed to add transaction.");
       console.error("Failed to add transaction:", err);
     } finally {
@@ -249,22 +320,26 @@ const ExpensesPage = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:4000/api/expense/delete/${id}`,
+        `http://localhost:4000/api/expense/delete/${id}?email=${encodeURIComponent(
+          userEmail
+        )}`,
         {
           method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: userEmail }),
         }
       );
 
       if (!response.ok) {
-        throw new Error("Failed to delete transaction.");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.msg || "Failed to delete transaction.");
       }
+
       alert("Transaction deleted successfully");
+
       fetchRecentData();
     } catch (err) {
       setError(err.message || "Failed to delete transaction.");
       console.error("Failed to delete transaction:", err);
+    } finally {
       setIsLoading(false);
     }
   };

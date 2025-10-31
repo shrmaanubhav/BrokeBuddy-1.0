@@ -232,7 +232,7 @@ export const addExpenses = async (req, res) => {
 
 export const delExpense = async (req, res) => {
   const { id } = req.params;
-  const userEmail = req.body.email;
+  const userEmail = req.query.email;
 
   try {
     const transaction = await manualTransaction.findById(id);
@@ -249,9 +249,9 @@ export const delExpense = async (req, res) => {
 
     await manualTransaction.findByIdAndDelete(id);
 
-    res.status(200).json({ msg: "Transaction deleted successfully" });
+    return res.status(200).json({ msg: "Transaction deleted successfully" });
   } catch (error) {
     console.error("Error deleting transaction:", error);
-    res.status(500).json({ msg: "Server error", error: error.message });
+    return res.status(500).json({ msg: "Server error", error: error.message });
   }
 };

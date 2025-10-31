@@ -41,6 +41,12 @@ const HomePage = ({ setIsAuthenticated }) => {
     }
   }, [userEmail]);
 
+  const clearCache = () => {
+    localStorage.removeItem("cachedTransactions");
+    localStorage.removeItem("transactions_time");
+    console.log("✅ Cache cleared on logout");
+  };
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (isProfileOpen && !event.target.closest(".profile-section")) {
@@ -59,6 +65,7 @@ const HomePage = ({ setIsAuthenticated }) => {
       alert(res.data.msg || "Logged out");
       localStorage.removeItem("userEmail");
       localStorage.removeItem("name");
+      clearCache();
       setIsAuthenticated(false);
       navigate("/");
     } catch (err) {
