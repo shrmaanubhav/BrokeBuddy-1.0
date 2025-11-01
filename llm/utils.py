@@ -14,7 +14,10 @@ merchant_list=['Google Manda',
  'LAL SAHAB SHUKLA']
 
 category_list=['Misc', 'Grocery', 'Coffee', 'Food']
-    
+def make_merchant_list():
+    df=pd.read_json("data_array.json")
+    merchant_list=df["Name"].unique().tolist() or []
+    return merchant_list
 
 #Budgetting functions-Let the LLM do it just give the data for it to reason
 
@@ -28,6 +31,8 @@ def extract_category(query):
 
 def extract_merchant(query):
     query = query.lower()
+    
+    merchant_list=make_merchant_list()
     best_match,score,idx=process.extractOne(query,[m for m in merchant_list],fuzz.partial_ratio)
     if score > 50: 
         return merchant_list[idx] 
@@ -41,6 +46,8 @@ def match_merchant_name(extracted_name: str):
         return None
 
     # Normalize input
+    
+    merchant_list=make_merchant_list()
     extracted_name = extracted_name.strip().lower()
     candidates = [m.lower() for m in merchant_list]
 

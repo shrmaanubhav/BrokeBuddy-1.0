@@ -6,7 +6,11 @@ from langchain_core.output_parsers import PydanticOutputParser,StrOutputParser
 from langchain_core.prompts import PromptTemplate
 from langchain_groq import ChatGroq
 from langchain.schema.runnable import RunnableBranch
-
+import os
+from datetime import datetime, timedelta
+from dotenv import load_dotenv
+from email_parser import FindCostFromGivenDate
+load_dotenv()
 model= AutoModelForSequenceClassification.from_pretrained("adith-regan/intent-classifier")
 tokenizer = AutoTokenizer.from_pretrained("adith-regan/intent-classifier")
 model.eval()
@@ -30,14 +34,14 @@ MODEL = "llama-3.1-8b-instant"
 
 llm=ChatGroq(
     model=MODEL,
-    api_key="REMOVED_GROQ_KEY",
+    api_key=os.getenv("API_KEY"),
     temperature=0.1
 )
 
 
 llm2 =ChatGroq(
     model="openai/gpt-oss-20b",
-    api_key="REMOVED_GROQ_KEY",
+    api_key=os.getenv("API_KEY"),
     temperature=0.1
 )
 
@@ -136,5 +140,16 @@ def handle_add_expense(query):
             return result
     return False
 
+
+
+def updateData(email):
+    date_2months=datetime.today()-timedelta(days=60)
+    data = FindCostFromGivenDate(email)
+    transactions = data.transactions
+    data_arr=[]
+    for txn in transactions:
+        txn_date=datetime.strptime(txn['date'],'%d-%b-%Y')
+        data_arr
+        
 
 #print(handle_add_expense("Add an expense of 500 on Amazon for groceries on 5th Aug 2024"))

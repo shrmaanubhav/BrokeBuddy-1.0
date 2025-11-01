@@ -1,5 +1,5 @@
 import Nickname from "../models/Nickname.js";
-
+import { buildAgentJson } from "../utils/buildAgentJson.js";
 export const getNicknames = async (req, res) => {
   try {
     const { email } = req.body;
@@ -18,18 +18,29 @@ export const getNicknames = async (req, res) => {
 
 export const saveNickname = async (req, res) => {
   const { email, upiId, nickname } = req.body;
-
+  let updatedNickname=""
   try {
     if (!nickname || nickname.trim() === "") {
       await Nickname.findOneAndDelete({ userEmail: email, upiId: upiId });
-      return res.json({ message: "Nickname deleted" });
+    }
+    else{
+        updatedNickname = await Nickname.findOneAndUpdate(
+        { userEmail: email, upiId: upiId },
+        { nickname: nickname },
+        { new: true, upsert: true }
+      );
     }
 
-    const updatedNickname = await Nickname.findOneAndUpdate(
-      { userEmail: email, upiId: upiId },
-      { nickname: nickname },
-      { new: true, upsert: true }
-    );
+    
+    const formatted = await buildAgentJson(email);
+
+    
+    await fetch("http://localhost:8000/updateFormattedData", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formatted), // directly send array
+    });
+
 
     res.json(updatedNickname);
   } catch (error) {

@@ -41,6 +41,32 @@ const HomePage = ({ setIsAuthenticated }) => {
     }
   }, [userEmail]);
 
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const res = await fetch("http://localhost:4000/api/profile/data", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body:JSON.stringify({"email":userEmail})
+        });
+
+        if (!res.ok) {
+          throw new Error("Could not fetch data");
+        }
+        alert("User Data Fetched!")
+        
+      } catch (error) {
+        console.error("Failed to fetch user data", error);
+      }
+    };
+
+    if (userEmail) {
+      fetchUserData();
+    }
+  }, [userEmail]);
+
+
   const clearCache = () => {
     localStorage.removeItem("cachedTransactions");
     localStorage.removeItem("transactions_time");

@@ -1,7 +1,15 @@
-from agents.b import Agent
-import pandas as pd
-from utils import *
 
+import pandas as pd
+from  utils import *
+
+
+class Agent:
+    def __init__(self,name):
+        self.name=name
+
+    def extract_data(self,query):
+        #Will be overriden
+        return {}
 
 
 class ExpenseAgent(Agent):
@@ -9,15 +17,17 @@ class ExpenseAgent(Agent):
         super().__init__("expenses")
     
     def extract_data(self, query,df,start,end,merchant):
-        
+        df = pd.read_json("data_array.json")
         merchant_exp=0
         filtered=df.copy()
         total_expenses=0
-
+        print("Extracting DATA")
+        filtered=filtered[filtered["Status"]=="DEBITED"]
         if start is not None and end is not None:
          filtered = filter_date(filtered, start, end)
         elif start is not None:  # if only start provided
             filtered = filtered[filtered["Date"] >= pd.to_datetime(start)]
+            
         elif end is not None:  # if only end provided
             filtered = filtered[filtered["Date"] <= pd.to_datetime(end)]
 
@@ -25,7 +35,9 @@ class ExpenseAgent(Agent):
 
         if merchant!="all merchants":
             print(merchant)
+            print("TRY")
             filtered = filtered[filtered['Name'].str.contains(merchant, case=False, na=False)]
+            print(filtered)
             merchant_exp=get_total_spent(filtered)
             print(filtered)
            
@@ -53,4 +65,7 @@ class ExpenseAgent(Agent):
 
 
 
-
+# df = pd.read_json("data_array.json")
+# filtered=df.copy()
+# filtered = filtered[filtered['Name'].str.contains("Gupta1", case=False, na=False)]
+# print(filtered)

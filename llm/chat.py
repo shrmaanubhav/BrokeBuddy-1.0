@@ -51,6 +51,7 @@ def extract_data_node(chatbot,state:ChatState,df)->ChatState:
             return state
         
         merchant,start_date,end_date = chatbot.merchant_date(query)
+
         if not merchant:
             if state["merchant"]:
                 merchant = state["merchant"]
@@ -172,10 +173,13 @@ class ChatBot():
 
     def merchant_date(self,query):
         response = extraction_chain.invoke({"query": query, "today": datetime.datetime.today().strftime("%-d-%b-%Y")})
-        print("LLM response:", response)
-        
+        print("Merchant value:", response.merchant)
+        print("Start date:", response.start_date)
+        print("End date:", response.end_date)
+
+
         merchant=match_merchant_name(response.merchant) 
-       
+        print(merchant)
         start=response.start_date
         end=response.end_date
         return merchant,start,end
