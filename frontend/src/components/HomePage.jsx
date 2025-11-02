@@ -10,7 +10,7 @@ const HomePage = ({ setIsAuthenticated }) => {
 
   const [isChangeUserModalOpen, setIsChangeUserModalOpen] = useState(false);
   const [isChangePassModalOpen, setIsChangePassModalOpen] = useState(false);
-
+  const [isFetching, setIsFetching] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
@@ -40,32 +40,6 @@ const HomePage = ({ setIsAuthenticated }) => {
       fetchUserProfile();
     }
   }, [userEmail]);
-
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const res = await fetch("http://localhost:4000/api/profile/data", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body:JSON.stringify({"email":userEmail})
-        });
-
-        if (!res.ok) {
-          throw new Error("Could not fetch data");
-        }
-        alert("User Data Fetched!")
-        
-      } catch (error) {
-        console.error("Failed to fetch user data", error);
-      }
-    };
-
-    if (userEmail) {
-      fetchUserData();
-    }
-  }, [userEmail]);
-
 
   const clearCache = () => {
     localStorage.removeItem("cachedTransactions");
@@ -99,6 +73,31 @@ const HomePage = ({ setIsAuthenticated }) => {
       alert("Logout failed");
     }
   };
+
+  const handleFetchData=async ()=>{
+    if(isFetching) return;
+    setIsFetching(true)
+    try {
+        const res = await fetch("http://localhost:4000/api/profile/data", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body:JSON.stringify({"email":userEmail})
+        });
+
+        if (!res.ok) {
+          throw new Error("Could not fetch data");
+        }
+        alert("User Data Fetched!")
+        
+      } catch (error) {
+        console.error("Failed to fetch user data", error);
+      }
+      finally{
+        setIsFetching(false)
+      }
+  }
+
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
@@ -237,9 +236,10 @@ const HomePage = ({ setIsAuthenticated }) => {
               ⚡ BrokeBuddy
             </Link>
             <div className="nav-links">
-              <Link to="/expenses" className="nav-link">
+              <Link to="/expenses" className="btn btn-primary nav-link-btn">
                 Expenses
               </Link>
+              <button className="btn btn-primary" onClick={handleFetchData} disabled={true} >Fetch Data</button>
               <Link to="/chatbot" className="btn btn-primary nav-link-btn">
                 {" "}
                 {/* Use Link directly */}
@@ -424,10 +424,11 @@ const HomePage = ({ setIsAuthenticated }) => {
           <h5>Welcome, {name || "Buddy"}</h5>
 
           <button
-            className="btn btn-primary"
-            style={{ fontSize: "1.125rem", padding: "0.75rem 2rem" }}
+            className="btn btn-primary nav-link-btn"
+            style={{ fontSize: "1.125rem", padding: "0.75rem 2rem",textDecoration:"none" }}
           >
-            🧠 Start AI Analysis →
+            <Link to="/chatbot" style={{textDecoration:"none"}}>🧠 Start AI Analysis →</Link>
+            
           </button>
 
           {/* Feature Cards */}
@@ -449,11 +450,6 @@ const HomePage = ({ setIsAuthenticated }) => {
               </p>
             </Link>
 
-            <div className="feature-card">
-              <div className="feature-icon green">👥</div>
-              <h3>Friends & Social</h3>
-              <p>Split expenses and manage shared costs with your network</p>
-            </div>
           </div>
         </div>
       </section>
@@ -468,7 +464,7 @@ const HomePage = ({ setIsAuthenticated }) => {
       >
         <div className="container">
           <p style={{ color: "#666" }}>
-            © 2024 InboxSpend. Powered by AI for smarter financial decisions.
+            © 2025 InboxSpend. Powered by AI for smarter financial decisions.
           </p>
         </div>
       </footer>

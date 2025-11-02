@@ -46,10 +46,29 @@ const ExpensesPage = () => {
 
   const userEmail = localStorage.getItem("userEmail");
 
+
+  const fetchNicknames = async () => {
+  try {
+    const response = await fetch("http://localhost:4000/api/nicknames/get", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: userEmail }),
+    });
+
+    if (!response.ok) throw new Error("Failed to fetch nicknames");
+
+    const data = await response.json();
+    setNicknames(data || {});
+  } catch (err) {
+    console.error("Failed to fetch nicknames:", err);
+  }
+};
+
+
   useEffect(() => {
     if (!userEmail) return;
-
-    const cached = loadCache();
+    fetchNicknames()
+    const cached = null;
     if (cached) {
       console.log("✅ Using cached transactions from localStorage");
       setExpenses(cached);
@@ -90,7 +109,7 @@ const ExpensesPage = () => {
       });
 
       if (!response.ok) throw new Error("Failed to fetch expenses");
-
+      console.log(response)
       const data = await response.json();
       setExpenses(data.Transactions || []);
       setCachedTransactions(data.Transactions || []);

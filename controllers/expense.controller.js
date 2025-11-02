@@ -1,25 +1,49 @@
 import Nickname from "../models/Nickname.js";
 import manualTransaction from "../models/manualTransaction.js";
+import onlineTransaction from "../models/onlineTransaction.js";
 
 const fetchExpensesFromPython = async (email, startDate, endDate) => {
   const data = { email, date: startDate, endDate };
+  console.log("Fetching expenses from Python with data:", data);
 
-  const resp = await fetch("http://localhost:8000/expense", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
+  // Helper to parse "17-Oct-2025" safely
+  const parseDate = (str) => {
+    if (!str) return null; // skip invalid
+    const [day, mon, year] = str.split("-");
+    const months = {
+      Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
+      Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
+    };
+    const m = months[mon];
+    if (m === undefined || !year || !day) return null;
+    return new Date(Number(year), m, Number(day));
+  };
+
+  const start = parseDate(startDate);
+  const end = parseDate(endDate);
+
+  const docs = await onlineTransaction.find({ userEmail: email });
+
+  // Filter safely with null checks
+  const filtered = docs.filter((doc) => {
+    const docDate = parseDate(doc.date);
+    return docDate && docDate >= start && docDate <= end;
   });
 
-  if (!resp.ok) {
-    throw new Error(`Python service failed with status ${resp.status}`);
-  }
-
-  return resp.json();
+  return filtered;
 };
+
+  // const resp = await fetch("http://localhost:8000/expense", {
+  //   method: "POST",
+  //   headers: { "Content-Type": "application/json" },
+  //   body: JSON.stringify(data),
+  // });
+
+  
 
 // merge python and database transaction
 const mergeAndSort = async (email, startDate, endDate, pyData) => {
-  const py_Tr = (pyData?.Transactions || []).map((t) => ({
+  const py_Tr = (pyData || []).map((t) => ({
     ...t,
     date: new Date(t.date),
     isManual: false,
@@ -42,19 +66,35 @@ const mergeAndSort = async (email, startDate, endDate, pyData) => {
     isManual: true,
   }));
 
-  const allTr = [...py_Tr, ...manualTr];
+  
+  let allTr = [...py_Tr, ...manualTr];
+
+  allTr = allTr.map((t) => {
+    const obj = t._doc || t;
+    return {
+      _id: obj._id,
+      COST: obj.COST,
+      UPI_ID: obj.UPI_ID,
+      DEBITED: obj.DEBITED,
+      date: obj.date instanceof Date ? obj.date : new Date(obj.date),
+      isManual: t.isManual ?? false,
+    };
+  });
 
   allTr.sort((a, b) => b.date - a.date);
 
+  console.log("Merged and sorted transactions:", allTr);
   return {
-    ...pyData,
+   
     Transactions: allTr,
   };
+
+
 };
 
 export const getExpenses = async (req, res) => {
   const { email } = req.body;
-
+  console.log("getExpenses called with email:", email);
   try {
     if (!email) {
       return res.status(400).json({ message: "Email is required" });
@@ -143,6 +183,8 @@ export const searchExpenses = async (req, res) => {
       effectiveEndDate,
       pyData
     );
+    // console.log("Expense data fetched for search:", expenseData);
+    // console.log(pyData)
 
     if (!query || query.trim() === "") {
       return res.status(200).json(expenseData);
@@ -150,24 +192,28 @@ export const searchExpenses = async (req, res) => {
 
     const nicknamesList = await Nickname.find({ userEmail: email });
     const nicknamesMap = nicknamesList.reduce((acc, item) => {
-      acc[item.upiId] = item.nickname;
+      acc[item.upiId.toLowerCase()] = item.nickname;
       return acc;
     }, {});
-
+    
     const queryLower = query.toLowerCase();
 
-    const filteredTransactions = expenseData.Transactions.filter(
-      (transaction) => {
-        const upiId = transaction.UPI_ID.toLowerCase();
-        const nickname = nicknamesMap[transaction.UPI_ID]?.toLowerCase();
+    const filteredTransactions = (expenseData.Transactions || []).filter((transaction) => {
+  // Extract and normalize UPI_ID
+  const upiIdRaw = transaction.UPI_ID || transaction._doc?.UPI_ID || "";
+  const upiId = upiIdRaw.toLowerCase();
 
-        if (upiId.includes(queryLower)) return true;
-        if (nickname && nickname.includes(queryLower)) return true;
+  // Lookup nickname safely (keys are lowercase now)
+  const nickname = nicknamesMap[upiId]?.toLowerCase() || "";
 
-        return false;
-      }
-    );
+  // Log for clarity
+  console.log("UPI:", upiIdRaw, "| Nickname:", nickname);
 
+  // Return only matches
+  return nickname.includes(queryLower) || upiId.includes(queryLower);
+});
+
+    console.log(filteredTransactions)
     return res.status(200).json({
       ...expenseData,
       Transactions: filteredTransactions,
