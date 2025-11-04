@@ -3,7 +3,7 @@ import "./ChatBot.css";
 
 export default function ChatBot() {
   const [messages, setMessages] = useState([
-    { id: 1, text: "Hello! Welcome to Inbox spend. How can I assist you today?", sender: "bot" },
+    { id: 1, text: "Hello! Welcome to BrokeBuddy Chatbot. How can I assist you today?", sender: "bot" },
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -63,7 +63,7 @@ export default function ChatBot() {
       <header className="chat-header">
         <div className="avatar">I</div>
         <div>
-          <h1 className="title">Inbox spend</h1>
+          <h1 className="title">BrokeBuddy</h1>
           <div className="status">
             <span className="status-dot"></span>
             <p className="status-text">Online</p>
