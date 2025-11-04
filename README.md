@@ -1,4 +1,4 @@
-# SEProj
+# BrokeBuddy
 
 Full-stack personal finance assistant that combines a React dashboard, an Express/MongoDB API, and a FastAPI + LangChain service for expense analytics and conversational insights.
 
