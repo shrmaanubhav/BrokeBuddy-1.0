@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./login.css";
-
+import toast ,{Toaster} from 'react-hot-toast';
+<div><Toaster/></div>
 function Login({ setIsAuthenticated }) {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
@@ -23,10 +24,10 @@ function Login({ setIsAuthenticated }) {
       });
       if (!res.ok)
         throw new Error((await res.json()).msg || "Error sending OTP");
-      alert("OTP sent to your email");
+      toast.success("OTP sent to your email");
       setStep(2);
     } catch (err) {
-      alert(err.message || "Error sending OTP");
+      toast.error(err.message || "Error sending OTP");
     }
   };
 
@@ -39,10 +40,10 @@ function Login({ setIsAuthenticated }) {
         body: JSON.stringify({ email: formData.email, OTP: otp }),
       });
       if (!res.ok) throw new Error((await res.json()).msg || "Invalid OTP");
-      alert("OTP verified successfully");
+      toast.success("OTP verified successfully");
       setStep(3);
     } catch (err) {
-      alert(err.message || "Invalid OTP");
+      toast.error(err.message || "Invalid OTP");
     }
   };
 
@@ -56,10 +57,10 @@ function Login({ setIsAuthenticated }) {
       });
       if (!res.ok)
         throw new Error((await res.json()).msg || "Failed to reset password");
-      alert("Password reset successfully");
+      toast.success("Password reset successfully");
       setStep(1);
     } catch (err) {
-      alert(err.message || "Failed to reset password");
+      toast.error(err.message || "Failed to reset password");
     }
   };
 
@@ -81,9 +82,10 @@ function Login({ setIsAuthenticated }) {
       localStorage.setItem("name", userData.name);
 
       setIsAuthenticated?.(true);
+      toast.success("Login successful");
       navigate("/homepage");
     } catch (err) {
-      alert(err.message || "Login failed");
+      toast.error(err.message || "Login failed");
     }
   };
 

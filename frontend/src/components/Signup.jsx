@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./signup.css";
+import toast from "react-hot-toast";
 
 function Signup() {
   const navigate = useNavigate();
@@ -29,10 +30,10 @@ function Signup() {
         }),
       });
       if (!res.ok) throw new Error((await res.json()).msg || "Error sending OTP");
-      alert("OTP sent to your email");
+      toast.success("OTP sent to your email");
       setStep(2);
     } catch (err) {
-      alert(err.message || "Error sending OTP");
+      toast.error(err.message || "Error sending OTP");
     } finally {
       setLoading(false);
     }
@@ -51,10 +52,10 @@ function Signup() {
         }),
       });
       if (!res.ok) throw new Error((await res.json()).msg || "Invalid OTP");
-      alert("OTP verified successfully");
+      toast.success("OTP verified successfully");
       setStep(3);
     } catch (err) {
-      alert(err.message || "Invalid OTP");
+      toast.error(err.message || "Invalid OTP");
     } finally {
       setLoading(false);
     }
@@ -75,11 +76,11 @@ function Signup() {
       });
       if (!res.ok)
         throw new Error((await res.json()).msg || "Error completing signup");
-      alert("User registered successfully!");
+      toast.success("User registered successfully!");
       setStep(1);
       navigate("/");
     } catch (err) {
-      alert(err.message || "Error completing signup");
+      toast.error(err.message || "Error completing signup");
     } finally {
       setLoading(false);
     }

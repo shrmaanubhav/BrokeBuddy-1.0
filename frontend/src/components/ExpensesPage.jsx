@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "./ExpensePage.css";
+import toast, { Toaster } from 'react-hot-toast';
+
+
 
 const CACHE_KEY = "transactions_cache";
 const CACHE_TIME_KEY = "transactions_time";
@@ -126,7 +129,7 @@ const ExpensesPage = () => {
     e.preventDefault();
 
     if (!searchStartDate) {
-      alert("Please select a start date.");
+      toast.error("Please select a start date.");
       return;
     }
 
@@ -282,7 +285,7 @@ const ExpensesPage = () => {
       !newExpenseData.amount ||
       !newExpenseData.date
     ) {
-      alert("Please fill in all required fields.");
+      toast.error("Please fill in all required fields.");
       return;
     }
 
@@ -352,7 +355,7 @@ const ExpensesPage = () => {
         throw new Error(errorData.msg || "Failed to delete transaction.");
       }
 
-      alert("Transaction deleted successfully");
+      toast.success("Transaction deleted successfully");
 
       fetchRecentData();
     } catch (err) {

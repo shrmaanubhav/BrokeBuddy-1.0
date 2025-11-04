@@ -2,6 +2,7 @@ import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import "./ExpensePage.css";
+import toast from "react-hot-toast";
 const HomePage = ({ setIsAuthenticated }) => {
   const navigate = useNavigate();
   const [name, setName] = useState("");
@@ -62,7 +63,7 @@ const HomePage = ({ setIsAuthenticated }) => {
   const handleLogout = async () => {
     try {
       const res = await axios.post("http://localhost:4000/api/auth/logout");
-      alert(res.data.msg || "Logged out");
+      toast.success(res.data.msg || "Logged out");
       localStorage.removeItem("userEmail");
       localStorage.removeItem("name");
       clearCache();
@@ -70,7 +71,7 @@ const HomePage = ({ setIsAuthenticated }) => {
       navigate("/");
     } catch (err) {
       console.error(err.response?.data?.msg || err.message);
-      alert("Logout failed");
+      toast.error("Logout failed");
     }
   };
 
@@ -88,7 +89,7 @@ const HomePage = ({ setIsAuthenticated }) => {
         if (!res.ok) {
           throw new Error("Could not fetch data");
         }
-        alert("User Data Fetched!")
+        toast.success("User Data Fetched!")
         
       } catch (error) {
         console.error("Failed to fetch user data", error);
@@ -102,23 +103,23 @@ const HomePage = ({ setIsAuthenticated }) => {
   const handleChangePassword = async (e) => {
     e.preventDefault();
     if (!currentPassword || !newPassword || !confirmNewPassword) {
-      alert("Please fill in all password fields.");
+      toast.error("Please fill in all password fields.");
       return;
     }
     if (currentPassword === newPassword) {
-      alert("New password cannot be the same as the current password.");
+      toast.error("New password cannot be the same as the current password.");
       return;
     }
 
     if (newPassword !== confirmNewPassword) {
-      alert("New passwords do not match.");
+      toast.error("New passwords do not match.");
       return;
     }
 
     try {
       const userEmail = localStorage.getItem("userEmail");
       if (!userEmail) {
-        alert("User not logged in.");
+        toast.error("User not logged in.");
         return;
       }
 
@@ -138,27 +139,27 @@ const HomePage = ({ setIsAuthenticated }) => {
         throw new Error(errData.msg || "Failed to change password");
       }
 
-      alert("Password changed successfully!");
+      toast.success("Password changed successfully!");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmNewPassword("");
       setIsChangePassModalOpen(false);
     } catch (err) {
       console.error("Change Password Error:", err.message);
-      alert(err.message || "Failed to change password");
+      toast.error(err.message || "Failed to change password");
     }
   };
 
   const handleChangeName = async (e) => {
     e.preventDefault();
     if (!newName.trim()) {
-      alert("Please enter a new name.");
+      toast.error("Please enter a new name.");
       return;
     }
     try {
       const userEmail = localStorage.getItem("userEmail");
       if (!userEmail) {
-        alert("User not logged in.");
+        toast.error("User not logged in.");
         return;
       }
       const res = await fetch("http://localhost:4000/api/profile/name", {
@@ -176,12 +177,12 @@ const HomePage = ({ setIsAuthenticated }) => {
         throw new Error(errData.msg || "Failed to change name");
       }
       const data = await res.json();
-      alert("Name changed successfully!");
+      toast.success("Name changed successfully!");
       setNewName("");
       setIsChangeUserModalOpen(false);
     } catch (err) {
       console.error("Change Name Error:", err.message);
-      alert(err.message || "Failed to change name");
+      toast.error(err.message || "Failed to change name");
     }
   };
   const handleDeleteAccount = async (e) => {
@@ -198,7 +199,7 @@ const HomePage = ({ setIsAuthenticated }) => {
     try {
       const userEmail = localStorage.getItem("userEmail");
       if (!userEmail) {
-        alert("User not logged in.");
+        toast.error("User not logged in.");
         return;
       }
 
@@ -214,7 +215,7 @@ const HomePage = ({ setIsAuthenticated }) => {
         throw new Error(errData.msg || "Failed to delete account");
       }
 
-      alert("Account deleted successfully.");
+      toast.success("Account deleted successfully.");
       localStorage.clear();
       if (setIsAuthenticated) {
         setIsAuthenticated(false);
@@ -222,7 +223,7 @@ const HomePage = ({ setIsAuthenticated }) => {
       navigate("/login");
     } catch (err) {
       console.error("Delete Account Error:", err.message);
-      alert(err.message || "Failed to delete account");
+      toast.error(err.message || "Failed to delete account");
     }
   };
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import  { Toaster } from 'react-hot-toast';
 import {
   HashRouter as Router,
   Routes,
@@ -61,7 +62,9 @@ function App() {
   return (
     <Router>
       <div className="App">
+        <Toaster position="top-center" reverseOrder={false} />
         <Routes>
+          
           {/* Public Routes */}
           {/* Use /login as the explicit login path */}
           <Route
