@@ -155,6 +155,7 @@ function Signup() {
                   className="signup-input"
                   placeholder="Enter your name"
                   onChange={handleChange}
+                   style={{ color: "" }}
                   required
                 />
               </div>

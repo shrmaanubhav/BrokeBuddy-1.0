@@ -97,8 +97,8 @@
   border: 2px solid #646cff44;
   border-radius: 14px;
   font-size: 1.08rem;
-  background: #000000;
-  color: #ffffffde;
+  background: #f5f3f3;
+  color: #100f0fde;
   font-family: inherit;
   outline: none;
   font-weight: 500;
@@ -106,7 +106,7 @@
 
 .signup-input:focus {
   border-color: #646cff;
-  background: #0c0c24;
+  background: #e8e8ef;
   box-shadow: 0 0 0 3px #646cff33;
 }
 
