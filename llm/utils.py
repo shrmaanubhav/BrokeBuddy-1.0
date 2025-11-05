@@ -64,9 +64,6 @@ def match_merchant_name(extracted_name: str):
 
 
 
-
-
-
 # def extract_action(query):
 #     model= SentenceTransformer("action_classifier")
 #     actions = {
