@@ -190,3 +190,49 @@
     font-size: 1.3rem;
   }
 }
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-wrapper .login-input {
+  width: 100%;
+  padding-right: 42px;
+  box-sizing: border-box;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  user-select: none;
+  font-size: 1.2rem;
+  opacity: 0.6;
+  transition: opacity 0.2s ease, transform 0.1s ease;
+}
+
+.toggle-password:hover {
+  opacity: 1;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.password-criteria {
+  list-style: none;
+  padding: 0;
+  font-size: 0.9rem;
+  margin: 10px 0 15px;
+}
+
+.password-criteria li {
+  color: red;
+  margin-bottom: 4px;
+}
+
+.password-criteria li.valid {
+  color: green;
+  font-weight: 500;
+}

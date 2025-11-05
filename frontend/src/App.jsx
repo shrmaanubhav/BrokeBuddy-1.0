@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import  { Toaster } from 'react-hot-toast';
+import { Toaster } from "react-hot-toast";
 import {
   HashRouter as Router,
   Routes,
@@ -62,9 +62,37 @@ function App() {
   return (
     <Router>
       <div className="App">
-        <Toaster position="top-center" reverseOrder={false} />
+        <Toaster
+          position="top-center"
+          reverseOrder={false}
+          toastOptions={{
+            duration: 2000,
+            style: {
+              background: "#1f1f1f",
+              color: "#fff",
+              fontSize: "0.95rem",
+              borderRadius: "10px",
+              padding: "10px 16px",
+            },
+            success: {
+              duration: 2000,
+              style: { background: "#16a34a", color: "#fff" },
+              iconTheme: {
+                primary: "#fff",
+                secondary: "#16a34a",
+              },
+            },
+            error: {
+              duration: 4000,
+              style: { background: "#dc2626", color: "#fff" },
+              iconTheme: {
+                primary: "#fff",
+                secondary: "#dc2626",
+              },
+            },
+          }}
+        />
         <Routes>
-          
           {/* Public Routes */}
           {/* Use /login as the explicit login path */}
           <Route
@@ -72,7 +100,7 @@ function App() {
             element={<Login setIsAuthenticated={setIsAuthenticated} />}
           />
           <Route path="/signup" element={<Signup />} />
-          
+
           {/* Single Protected Routes Group */}
           <Route element={<ProtectedRoute isAuthenticated={isAuthenticated} />}>
             {/* The root path (/) is the default protected landing page */}

@@ -16,6 +16,7 @@ const HomePage = ({ setIsAuthenticated }) => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [newName, setNewName] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -75,37 +76,55 @@ const HomePage = ({ setIsAuthenticated }) => {
     }
   };
 
-  const handleFetchData=async ()=>{
-    if(isFetching) return;
-    setIsFetching(true)
+  const handleFetchData = async () => {
+    if (isFetching) return;
+    setIsFetching(true);
     try {
-        const res = await fetch("http://localhost:4000/api/profile/data", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body:JSON.stringify({"email":userEmail})
-        });
+      const res = await fetch("http://localhost:4000/api/profile/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email: userEmail }),
+      });
 
-        if (!res.ok) {
-          throw new Error("Could not fetch data");
-        }
-        toast.success("User Data Fetched!")
-        
-      } catch (error) {
-        console.error("Failed to fetch user data", error);
+      if (!res.ok) {
+        throw new Error("Could not fetch data");
       }
-      finally{
-        setIsFetching(false)
-      }
-  }
+      toast.success("User Data Fetched!");
+    } catch (error) {
+      console.error("Failed to fetch user data", error);
+    } finally {
+      setIsFetching(false);
+    }
+  };
 
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false,
+  });
+
+  const [passwordValid, setPasswordValid] = useState({
+    length: false,
+    upper: false,
+    lower: false,
+    number: false,
+    special: false,
+    nospace: true,
+  });
+
+  const allValid = Object.values(passwordValid).every(Boolean);
+  const passwordsMatch =
+    newPassword && confirmNewPassword && newPassword === confirmNewPassword;
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
+
     if (!currentPassword || !newPassword || !confirmNewPassword) {
       toast.error("Please fill in all password fields.");
       return;
     }
+
     if (currentPassword === newPassword) {
       toast.error("New password cannot be the same as the current password.");
       return;
@@ -113,6 +132,16 @@ const HomePage = ({ setIsAuthenticated }) => {
 
     if (newPassword !== confirmNewPassword) {
       toast.error("New passwords do not match.");
+      return;
+    }
+
+    const strongPasswordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+\=\[\]{};:'",.<>\/?\\|`~])(?!.*\s).{8,}$/;
+
+    if (!strongPasswordRegex.test(newPassword)) {
+      toast.error(
+        "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character (no spaces)."
+      );
       return;
     }
 
@@ -128,8 +157,8 @@ const HomePage = ({ setIsAuthenticated }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: userEmail,
-          currentPassword: currentPassword,
-          newPassword: newPassword,
+          currentPassword,
+          newPassword,
         }),
         credentials: "include",
       });
@@ -240,7 +269,13 @@ const HomePage = ({ setIsAuthenticated }) => {
               <Link to="/expenses" className="btn btn-primary nav-link-btn">
                 Expenses
               </Link>
-              <button className="btn btn-primary" onClick={handleFetchData} disabled={true} >Fetch Data</button>
+              <button
+                className="btn btn-primary"
+                onClick={handleFetchData}
+                disabled={true}
+              >
+                Fetch Data
+              </button>
               <Link to="/chatbot" className="btn btn-primary nav-link-btn">
                 {" "}
                 {/* Use Link directly */}
@@ -364,44 +399,133 @@ const HomePage = ({ setIsAuthenticated }) => {
                 &times;
               </button>
             </div>
+
             <form onSubmit={handleChangePassword} className="modal-form">
               <div className="form-group">
                 <label>Current Password</label>
-                <input
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  placeholder="Enter current password"
-                  required
-                  className="form-input"
-                />
+                <div className="password-wrapper">
+                  <input
+                    type={showPasswords.current ? "text" : "password"}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Enter current password"
+                    required
+                    className="form-input"
+                  />
+                  <span
+                    className="toggle-password"
+                    onClick={() =>
+                      setShowPasswords({
+                        ...showPasswords,
+                        current: !showPasswords.current,
+                      })
+                    }
+                  >
+                    {showPasswords.current ? "🙈" : "👁️"}
+                  </span>
+                </div>
               </div>
               <div className="form-group">
                 <label>New Password</label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter new password"
-                  required
-                  className="form-input"
-                />
+                <div className="password-wrapper">
+                  <input
+                    type={showPasswords.new ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => {
+                      setNewPassword(e.target.value);
+
+                      // password validation
+                      const val = e.target.value;
+                      const checks = {
+                        length: val.length >= 8,
+                        upper: /[A-Z]/.test(val),
+                        lower: /[a-z]/.test(val),
+                        number: /\d/.test(val),
+                        special:
+                          /[!@#$%^&*()_\-+\=\[\]{};:'",.<>\/?\\|`~]/.test(val),
+                        nospace: !/\s/.test(val),
+                      };
+                      setPasswordValid(checks);
+                    }}
+                    placeholder="Enter new password"
+                    required
+                    className="form-input"
+                  />
+                  <span
+                    className="toggle-password"
+                    onClick={() =>
+                      setShowPasswords({
+                        ...showPasswords,
+                        new: !showPasswords.new,
+                      })
+                    }
+                  >
+                    {showPasswords.new ? "🙈" : "👁️"}
+                  </span>
+                </div>
               </div>
+
+              <ul className="password-criteria">
+                <li className={passwordValid.length ? "valid" : ""}>
+                  At least 8 characters
+                </li>
+                <li className={passwordValid.lower ? "valid" : ""}>
+                  Contains a lowercase letter
+                </li>
+                <li className={passwordValid.upper ? "valid" : ""}>
+                  Contains an uppercase letter
+                </li>
+                <li className={passwordValid.number ? "valid" : ""}>
+                  Contains a number
+                </li>
+                <li className={passwordValid.special ? "valid" : ""}>
+                  Contains a special character (!@#$%^&*)
+                </li>
+                <li className={passwordValid.nospace ? "valid" : ""}>
+                  No spaces allowed
+                </li>
+              </ul>
+
               <div className="form-group">
                 <label>Confirm New Password</label>
-                <input
-                  type="password"
-                  value={confirmNewPassword}
-                  onChange={(e) => setConfirmNewPassword(e.target.value)}
-                  placeholder="Confirm new password"
-                  required
-                  className="form-input"
-                />
+                <div className="password-wrapper">
+                  <input
+                    type={showPasswords.confirm ? "text" : "password"}
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    placeholder="Confirm new password"
+                    required
+                    className="form-input"
+                  />
+                  <span
+                    className="toggle-password"
+                    onClick={() =>
+                      setShowPasswords({
+                        ...showPasswords,
+                        confirm: !showPasswords.confirm,
+                      })
+                    }
+                  >
+                    {showPasswords.confirm ? "🙈" : "👁️"}
+                  </span>
+                </div>
               </div>
+
+              {!passwordsMatch && confirmNewPassword && (
+                <p style={{ color: "red", fontSize: "0.9rem" }}>
+                  ⚠️ Passwords do not match
+                </p>
+              )}
+
               <div className="form-actions">
-                <button type="submit" className="btn btn-primary">
-                  Save Password
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={!allValid || !passwordsMatch || loading}
+                >
+                  {loading ? "Saving..." : "Save Password"}
                 </button>
+
                 <button
                   type="button"
                   onClick={() => setIsChangePassModalOpen(false)}
@@ -426,10 +550,15 @@ const HomePage = ({ setIsAuthenticated }) => {
 
           <button
             className="btn btn-primary nav-link-btn"
-            style={{ fontSize: "1.125rem", padding: "0.75rem 2rem",textDecoration:"none" }}
+            style={{
+              fontSize: "1.125rem",
+              padding: "0.75rem 2rem",
+              textDecoration: "none",
+            }}
           >
-            <Link to="/chatbot" style={{textDecoration:"none"}}>🧠 Start AI Analysis →</Link>
-            
+            <Link to="/chatbot" style={{ textDecoration: "none" }}>
+              🧠 Start AI Analysis →
+            </Link>
           </button>
 
           {/* Feature Cards */}
@@ -450,7 +579,6 @@ const HomePage = ({ setIsAuthenticated }) => {
                 Track and categorize your spending with intelligent automation
               </p>
             </Link>
-
           </div>
         </div>
       </section>

@@ -14,11 +14,41 @@ function Signup() {
   });
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const [passwordValid, setPasswordValid] = useState({
+    length: false,
+    upper: false,
+    lower: false,
+    number: false,
+    special: false,
+    nospace: true,
+  });
+
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+
+    if (name === "password") {
+      const checks = {
+        length: value.length >= 8,
+        upper: /[A-Z]/.test(value),
+        lower: /[a-z]/.test(value),
+        number: /\d/.test(value),
+        special: /[!@#$%^&*()_\-+\=\[\]{};:'",.<>\/?\\|`~]/.test(value),
+        nospace: !/\s/.test(value),
+      };
+      setPasswordValid(checks);
+    }
+  };
 
   const sendOTP = async (e) => {
     e.preventDefault();
+    if (!formData.name || !formData.email) {
+      toast.error("Please enter your name and email first.");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch("http://localhost:4000/api/auth/sendOTP", {
@@ -29,7 +59,8 @@ function Signup() {
           email: formData.email,
         }),
       });
-      if (!res.ok) throw new Error((await res.json()).msg || "Error sending OTP");
+      if (!res.ok)
+        throw new Error((await res.json()).msg || "Error sending OTP");
       toast.success("OTP sent to your email");
       setStep(2);
     } catch (err) {
@@ -41,6 +72,11 @@ function Signup() {
 
   const verifyOTP = async (e) => {
     e.preventDefault();
+    if (!formData.otp) {
+      toast.error("Please enter the OTP.");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch("http://localhost:4000/api/auth/verifyOTP", {
@@ -63,6 +99,12 @@ function Signup() {
 
   const completeSignup = async (e) => {
     e.preventDefault();
+    const allValid = Object.values(passwordValid).every(Boolean);
+    if (!allValid) {
+      toast.error("Please create a strong password before continuing.");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch("http://localhost:4000/api/auth/signup", {
@@ -85,6 +127,8 @@ function Signup() {
       setLoading(false);
     }
   };
+
+  const allValid = Object.values(passwordValid).every(Boolean);
 
   return (
     <div className="signup-container">
@@ -165,20 +209,49 @@ function Signup() {
             <>
               <div className="signup-group">
                 <label className="signup-label">Set Password</label>
-                <input
-                  name="password"
-                  type="password"
-                  className="signup-input"
-                  placeholder="Create your password"
-                  onChange={handleChange}
-                  required
-                />
+                <div className="password-wrapper">
+                  <input
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    className="signup-input"
+                    placeholder="Create your password"
+                    onChange={handleChange}
+                    required
+                  />
+                  <span
+                    className="toggle-password"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? "🙈" : "👁️"}
+                  </span>
+                </div>
               </div>
+
+              <ul className="password-criteria">
+                <li className={passwordValid.length ? "valid" : ""}>
+                  At least 8 characters
+                </li>
+                <li className={passwordValid.lower ? "valid" : ""}>
+                  Contains a lowercase letter
+                </li>
+                <li className={passwordValid.upper ? "valid" : ""}>
+                  Contains an uppercase letter
+                </li>
+                <li className={passwordValid.number ? "valid" : ""}>
+                  Contains a number
+                </li>
+                <li className={passwordValid.special ? "valid" : ""}>
+                  Contains a special character (!@#$%^&*)
+                </li>
+                <li className={passwordValid.nospace ? "valid" : ""}>
+                  No spaces allowed
+                </li>
+              </ul>
 
               <button
                 className="signup-button"
                 onClick={completeSignup}
-                disabled={loading}
+                disabled={!allValid || loading}
               >
                 {loading ? "Creating Account..." : "Complete Signup"}
               </button>
