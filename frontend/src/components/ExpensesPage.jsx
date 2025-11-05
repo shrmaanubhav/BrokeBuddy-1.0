@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "./ExpensePage.css";
-import toast, { Toaster } from 'react-hot-toast';
-
-
+import toast, { Toaster } from "react-hot-toast";
 
 const CACHE_KEY = "transactions_cache";
 const CACHE_TIME_KEY = "transactions_time";
@@ -49,28 +47,26 @@ const ExpensesPage = () => {
 
   const userEmail = localStorage.getItem("userEmail");
 
-
   const fetchNicknames = async () => {
-  try {
-    const response = await fetch("http://localhost:4000/api/nicknames/get", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: userEmail }),
-    });
+    try {
+      const response = await fetch("http://localhost:4000/api/nicknames/get", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: userEmail }),
+      });
 
-    if (!response.ok) throw new Error("Failed to fetch nicknames");
+      if (!response.ok) throw new Error("Failed to fetch nicknames");
 
-    const data = await response.json();
-    setNicknames(data || {});
-  } catch (err) {
-    console.error("Failed to fetch nicknames:", err);
-  }
-};
-
+      const data = await response.json();
+      setNicknames(data || {});
+    } catch (err) {
+      console.error("Failed to fetch nicknames:", err);
+    }
+  };
 
   useEffect(() => {
     if (!userEmail) return;
-    fetchNicknames()
+    fetchNicknames();
     const cached = null;
     if (cached) {
       console.log("✅ Using cached transactions from localStorage");
@@ -112,7 +108,7 @@ const ExpensesPage = () => {
       });
 
       if (!response.ok) throw new Error("Failed to fetch expenses");
-      console.log(response)
+      console.log(response);
       const data = await response.json();
       setExpenses(data.Transactions || []);
       setCachedTransactions(data.Transactions || []);
@@ -413,7 +409,7 @@ const ExpensesPage = () => {
               ⚡ BrokeBuddy
             </Link>
             <div className="nav-links">
-              <button className="btn btn-outline">📥 Export</button>
+              {/* <button className="btn btn-outline">📥 Export</button> */}
               <button
                 onClick={() => setIsAddModalOpen(true)}
                 className="btn btn-primary"
@@ -494,6 +490,7 @@ const ExpensesPage = () => {
                   <form onSubmit={handleSearch} className="search-form">
                     <div className="form-group">
                       <label>Start Date*</label>
+                      <br />
                       <input
                         type="date"
                         value={searchStartDate}
@@ -503,6 +500,7 @@ const ExpensesPage = () => {
                     </div>
                     <div className="form-group">
                       <label>End Date</label>
+                      <br />
                       <input
                         type="date"
                         value={searchEndDate}
@@ -512,6 +510,7 @@ const ExpensesPage = () => {
                     </div>
                     <div className="form-group">
                       <label>UPI / Nickname</label>
+                      <br />
                       <input
                         type="text"
                         value={searchQuery}
@@ -519,10 +518,11 @@ const ExpensesPage = () => {
                         placeholder="e.g., PAYTM or Mom"
                       />
                     </div>
+                    <br />
                     <div className="form-actions">
                       <button type="submit" className="btn btn-primary">
                         Search
-                      </button>
+                      </button>{" "}
                       <button
                         type="button"
                         onClick={() => setIsSearchModalOpen(false)}
@@ -553,6 +553,7 @@ const ExpensesPage = () => {
                   <form onSubmit={handleAddSubmit} className="add-expense-form">
                     <div className="form-group">
                       <label>Nickname / UPI ID*</label>
+                      <br />
                       <input
                         type="text"
                         name="nicknameOrUpiId"
@@ -564,6 +565,7 @@ const ExpensesPage = () => {
                     </div>
                     <div className="form-group">
                       <label>Amount*</label>
+                      <br />
                       <input
                         type="number"
                         name="amount"
@@ -576,6 +578,7 @@ const ExpensesPage = () => {
                     </div>
                     <div className="form-group">
                       <label>Date*</label>
+                      <br />
                       <input
                         type="date"
                         name="date"
@@ -584,6 +587,7 @@ const ExpensesPage = () => {
                         required
                       />
                     </div>
+                    <br />
                     <div className="form-group radio-group">
                       <label>Type:</label>
                       <div>
@@ -609,10 +613,11 @@ const ExpensesPage = () => {
                         <label htmlFor="creditRadio">Credit (+)</label>
                       </div>
                     </div>
+                    <br />
                     <div className="form-actions">
                       <button type="submit" className="btn btn-primary">
                         Save Transaction
-                      </button>
+                      </button>{" "}
                       <button
                         type="button"
                         onClick={() => setIsAddModalOpen(false)}

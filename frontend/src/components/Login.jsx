@@ -11,6 +11,7 @@ function Login({ setIsAuthenticated }) {
   const [newPass, setNewPass] = useState("");
   const [confirmPass, setConfirmPass] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loading2, setLoading2] = useState(false);
   const [showPasswords, setShowPasswords] = useState({
     login: false,
     new: false,
@@ -124,7 +125,7 @@ function Login({ setIsAuthenticated }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setLoading2(true);
     try {
       const res = await fetch(`${BASE_URL}/login`, {
         method: "POST",
@@ -147,7 +148,7 @@ function Login({ setIsAuthenticated }) {
     } catch (err) {
       toast.error(err.message || "Login failed");
     } finally {
-      setLoading(false);
+      setLoading2(false);
     }
   };
 
@@ -198,8 +199,12 @@ function Login({ setIsAuthenticated }) {
                 </div>
               </div>
 
-              <button type="submit" className="login-button" disabled={loading}>
-                {loading ? "Logging in..." : "Login"}
+              <button
+                type="submit"
+                className="login-button"
+                disabled={loading2}
+              >
+                {loading2 ? "Logging in..." : "Login"}
               </button>
 
               <button
@@ -224,6 +229,7 @@ function Login({ setIsAuthenticated }) {
                   placeholder="Enter OTP sent to your email"
                   onChange={(e) => setOtp(e.target.value)}
                   required
+                  style={{ color: "white" }}
                 />
               </div>
               <button

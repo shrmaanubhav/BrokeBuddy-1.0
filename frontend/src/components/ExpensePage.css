@@ -760,5 +760,16 @@ input[type="date"] {
   border: 4px solid #e1dede;
   border-radius: 20px;
   background-color: #fff;
-   color: #000;
+  color: #000;
+}
+
+.add-expense-form-container {
+  padding: 20px;
+  margin-left: 20px;
+  font-size: 1.2rem;
+}
+.search-bar {
+  padding: 20px;
+  margin-left: 20px;
+  font-size: 1.2rem;
 }

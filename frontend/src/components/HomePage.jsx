@@ -76,9 +76,12 @@ const HomePage = ({ setIsAuthenticated }) => {
     }
   };
 
-  const handleFetchData = async () => {
-    if (isFetching) return;
+  const handleFetchData = async (e) => {
+    e.preventDefault();
     setIsFetching(true);
+    const toastId = toast.loading("Fetching user data...");
+    console.log("Fetching user data...");
+
     try {
       const res = await fetch("http://localhost:4000/api/profile/data", {
         method: "POST",
@@ -90,11 +93,12 @@ const HomePage = ({ setIsAuthenticated }) => {
       if (!res.ok) {
         throw new Error("Could not fetch data");
       }
-      toast.success("User Data Fetched!");
     } catch (error) {
       console.error("Failed to fetch user data", error);
     } finally {
       setIsFetching(false);
+      toast.dismiss(toastId);
+      toast.success("User Data Fetched!");
     }
   };
 
@@ -271,8 +275,9 @@ const HomePage = ({ setIsAuthenticated }) => {
               </Link>
               <button
                 className="btn btn-primary"
-                onClick={handleFetchData}
-                disabled={true}
+                style={{ padding: "11px" }}
+                onClick={(e) => handleFetchData(e)}
+                disabled={isFetching}
               >
                 Fetch Data
               </button>
