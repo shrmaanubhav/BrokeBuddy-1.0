@@ -6,6 +6,7 @@ Full-stack personal finance assistant that combines a React dashboard, an Expres
 - Track online and manual UPI transactions with search, caching, and nickname support for frequent payees.
 - OTP-based sign-up/login with JWT session cookies, password management, and account deletion.
 - Sync historical transactions from the LLM service, enrich them with nicknames, and push formatted data back for downstream analysis.
+- ChatBot using an underlying agent to help user talk to their expenses.
 - FastAPI layer wraps Groq-hosted LLMs to power the expense chatbot, natural-language querying, and merchant/date extraction.
 
 ## Video Demo
@@ -34,6 +35,7 @@ SEProj/
 ## Features
 - **Expense dashboard** – recent transactions, nickname editor, cached search, modal-driven manual entry, and CSV-style layout.
 - **Profile management** – update display name, change password, delete account, and trigger a two-month historical sync.
+- **FineTuned DistillBert for intent Classification** – Used a sample of 400 prompts for classification training.
 - **Chatbot assistant** – LLM answers spend questions, extracts merchants/date ranges, and can log new expenses conversationally.
 - **Nickname-to-UPI mapping** – central store in MongoDB updates both dashboard and LLM context automatically.
 - **OTP sign-up flow** – Gmail transport sends one-time codes, verified before user creation.
