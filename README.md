@@ -1,6 +1,6 @@
 # BrokeBuddy
 
-Full-stack personal finance assistant that combines a React dashboard, an Express/MongoDB API, and a FastAPI + LangChain service for expense analytics and conversational insights.
+Full-stack personal finance assistant that combines a React dashboard, an Express/MongoDB API, and a FastAPI + LangGraph service for expense analytics and conversational insights.
 
 ## Overview
 - Track online and manual UPI transactions with search, caching, and nickname support for frequent payees.
@@ -163,4 +163,6 @@ Visit `http://localhost:3000` once all services are up. The frontend talks to th
   3. Aggregates spend metrics from `data_array.json`.
   4. Optionally logs new expenses when intent detection confirms it.
 
+## Architecture Diagram of the Agent
+<img width="1024" height="1536" alt="ChatGPT Image Nov 6, 2025 at 02_04_20 PM" src="https://github.com/user-attachments/assets/178afeb3-05cb-49d8-ab53-c4de653044b6" />
 
