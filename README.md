@@ -53,7 +53,7 @@ Create a `.env` file in the repository root:
 | `JWT_SECRET`| Secret for signing auth cookies               |
 | `MAIL_USER` | Gmail address that sends OTP emails           |
 | `MAIL_PASS` | Gmail App Password (not your account password)|
-| `HF_TOKEN`  | (Optional) Hugging Face token for model pulls |
+
 
 Create `llm/.env` for the chatbot service:
 
@@ -163,13 +163,4 @@ Visit `http://localhost:3000` once all services are up. The frontend talks to th
   3. Aggregates spend metrics from `data_array.json`.
   4. Optionally logs new expenses when intent detection confirms it.
 
-## Development Tips
-- CORS: update `allowedOrigins` in `server.js` if hosting the frontend elsewhere.
-- Email: Gmail requires an App Password; regular passwords will fail SMTP auth.
-- Groq/HF credentials must be present before the FastAPI service boots, otherwise model initialization will throw.
-- When Mongo indices change (e.g., nickname uniqueness), restart the API or rebuild collections to ensure they take effect.
 
-## Next Steps
-- Add npm/yarn scripts (`"start"`/`"dev"`) to streamline backend startup.
-- Write integration tests for auth/expense flows and pytest suites for the FastAPI endpoints.
-- Containerize the three services and MongoDB for easier deployment.
