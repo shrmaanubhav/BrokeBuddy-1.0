@@ -8,6 +8,9 @@ Full-stack personal finance assistant that combines a React dashboard, an Expres
 - Sync historical transactions from the LLM service, enrich them with nicknames, and push formatted data back for downstream analysis.
 - FastAPI layer wraps Groq-hosted LLMs to power the expense chatbot, natural-language querying, and merchant/date extraction.
 
+## Video Demo
+https://drive.google.com/file/d/1o93DdkPTtgBXnVGRwTtNTuHS7Dn4QlqZ/view?usp=sharing
+
 ## Architecture
 ```
 SEProj/
