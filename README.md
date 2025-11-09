@@ -66,6 +66,13 @@ Create `llm/.env` for the chatbot service:
 |-----------|----------------------------------------|
 | `API_KEY` | Groq API key used by LangChain clients |
 
+Create `frontend/.env` for the admin login :
+
+| Variable  | Description                            |
+|-----------|----------------------------------------|
+| `REACT_APP_ADMIN_EMAIL` | Admin's email for login |
+| `REACT_APP_ADMIN_PASSWORD` | Admin's password for the app |
+
 Never commit these files to version control.
 
 ## Setup
