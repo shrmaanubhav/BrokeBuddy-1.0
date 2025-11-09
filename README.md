@@ -1,12 +1,16 @@
 # BrokeBuddy
 
-Full-stack personal finance assistant that combines a React dashboard, an Express/MongoDB API, and a FastAPI + LangChain service for expense analytics and conversational insights.
+Full-stack personal finance assistant that combines a React dashboard, an Express/MongoDB API, and a FastAPI + LangGraph service for expense analytics and conversational insights.
 
 ## Overview
 - Track online and manual UPI transactions with search, caching, and nickname support for frequent payees.
 - OTP-based sign-up/login with JWT session cookies, password management, and account deletion.
 - Sync historical transactions from the LLM service, enrich them with nicknames, and push formatted data back for downstream analysis.
+- ChatBot using an underlying agent to help user talk to their expenses.
 - FastAPI layer wraps Groq-hosted LLMs to power the expense chatbot, natural-language querying, and merchant/date extraction.
+
+## Video Demo
+https://drive.google.com/file/d/1o93DdkPTtgBXnVGRwTtNTuHS7Dn4QlqZ/view?usp=sharing
 
 ## Architecture
 ```
@@ -31,6 +35,7 @@ SEProj/
 ## Features
 - **Expense dashboard** – recent transactions, nickname editor, cached search, modal-driven manual entry, and CSV-style layout.
 - **Profile management** – update display name, change password, delete account, and trigger a two-month historical sync.
+- **FineTuned DistillBert for intent Classification** – Used a sample of 400 prompts for classification training.
 - **Chatbot assistant** – LLM answers spend questions, extracts merchants/date ranges, and can log new expenses conversationally.
 - **Nickname-to-UPI mapping** – central store in MongoDB updates both dashboard and LLM context automatically.
 - **OTP sign-up flow** – Gmail transport sends one-time codes, verified before user creation.
@@ -53,7 +58,7 @@ Create a `.env` file in the repository root:
 | `JWT_SECRET`| Secret for signing auth cookies               |
 | `MAIL_USER` | Gmail address that sends OTP emails           |
 | `MAIL_PASS` | Gmail App Password (not your account password)|
-| `HF_TOKEN`  | (Optional) Hugging Face token for model pulls |
+
 
 Create `llm/.env` for the chatbot service:
 
@@ -163,13 +168,6 @@ Visit `http://localhost:3000` once all services are up. The frontend talks to th
   3. Aggregates spend metrics from `data_array.json`.
   4. Optionally logs new expenses when intent detection confirms it.
 
-## Development Tips
-- CORS: update `allowedOrigins` in `server.js` if hosting the frontend elsewhere.
-- Email: Gmail requires an App Password; regular passwords will fail SMTP auth.
-- Groq/HF credentials must be present before the FastAPI service boots, otherwise model initialization will throw.
-- When Mongo indices change (e.g., nickname uniqueness), restart the API or rebuild collections to ensure they take effect.
+## Architecture Diagram of the Agent
+<img width="1024" height="1536" alt="ChatGPT Image Nov 6, 2025 at 02_04_20 PM" src="https://github.com/user-attachments/assets/178afeb3-05cb-49d8-ab53-c4de653044b6" />
 
-## Next Steps
-- Add npm/yarn scripts (`"start"`/`"dev"`) to streamline backend startup.
-- Write integration tests for auth/expense flows and pytest suites for the FastAPI endpoints.
-- Containerize the three services and MongoDB for easier deployment.
