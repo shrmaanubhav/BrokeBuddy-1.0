@@ -70,8 +70,8 @@ Create `frontend/.env` for the admin login :
 
 | Variable  | Description                            |
 |-----------|----------------------------------------|
-| `ADMIN_EMAIL` | Admin's email for login |
-| `ADMIN_PASSWORD` | Admin's password for the app |
+| `REACT_APP_ADMIN_EMAIL` | Admin's email for login |
+| `REACT_APP_ADMIN_PASSWORD` | Admin's password for the app |
 
 Never commit these files to version control.
 
