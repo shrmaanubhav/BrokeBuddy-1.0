@@ -20,6 +20,7 @@
     "clsx": "^2.0.0",
     "cookie": "^1.0.2",
     "cookie-parser": "^1.4.7",
+    "dotenv": "^17.2.3",
     "lucide-react": "^0.263.1",
     "next": "14.0.0",
     "parser": "^0.1.4",

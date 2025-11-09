@@ -3,6 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import "./login.css";
 import toast from "react-hot-toast";
 
+
+
+
 function Login({ setIsAuthenticated }) {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
@@ -126,7 +129,13 @@ function Login({ setIsAuthenticated }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading2(true);
-    try {
+    if(formData.email==process.env.REACT_APP_ADMIN_EMAIL && formData.password==process.env.REACT_APP_ADMIN_PASSWORD){
+      toast.success("Login successful");
+      setIsAuthenticated(true)
+      navigate("/homepage");
+    }
+    else{
+       try {
       const res = await fetch(`${BASE_URL}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -150,6 +159,8 @@ function Login({ setIsAuthenticated }) {
     } finally {
       setLoading2(false);
     }
+    }
+   
   };
 
   return (
