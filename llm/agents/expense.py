@@ -1,67 +1,68 @@
 
 import pandas as pd
 from  utils import *
+from utils import filter_date, get_total_spent, day_wise_spending
+from agents.base import Agent
 
 
-class Agent:
-    def __init__(self,name):
-        self.name=name
-
-    def extract_data(self,query):
-        #Will be overriden
-        return {}
 
 
 class ExpenseAgent(Agent):
     def __init__(self):
         super().__init__("expenses")
     
-    def extract_data(self, query,df,start,end,merchant):
-        df = pd.read_json("data_array.json")
-        merchant_exp=0
-        filtered=df.copy()
-        total_expenses=0
+    def extract_data(self, query, df, start, end, merchant=None, category=None):
         print("Extracting DATA")
-        filtered=filtered[filtered["Status"]=="DEBITED"]
+
+        filtered = df.copy()
+
+        # Date filtering
         if start is not None and end is not None:
-         filtered = filter_date(filtered, start, end)
-        elif start is not None:  # if only start provided
+            filtered = filter_date(filtered, start, end)
+        elif start is not None:
             filtered = filtered[filtered["Date"] >= pd.to_datetime(start)]
-            
-        elif end is not None:  # if only end provided
+        elif end is not None:
             filtered = filtered[filtered["Date"] <= pd.to_datetime(end)]
 
-        total_expenses=get_total_spent(filtered)
+        # Split debit / credit
+        debited = filtered[filtered["Status"] == "DEBITED"]
+        credited = filtered[filtered["Status"] == "CREDITED"]
 
-        if merchant!="all merchants":
-            print(merchant)
-            print("TRY")
-            filtered = filtered[filtered['Name'].str.contains(merchant, case=False, na=False)]
-            print(filtered)
-            merchant_exp=get_total_spent(filtered)
-            print(filtered)
-           
-        day_wise_spending_dict=day_wise_spending(filtered,start,end)
-        max_spent_day={}
-        min_spent_day={}
-        
+        # Totals
+        total_expenses = get_total_spent(debited)
+        total_received = get_total_spent(credited)
+
+        # Merchant analysis
+        merchant_data = compute_merchant_expenses(debited, credited, merchant)
+
+        # Category analysis
+        category_data = compute_category_expenses(debited, credited, category)
+
+        # Day-wise analysis
+        day_wise_spending_dict = day_wise_spending(debited, start, end)
+
+        max_spent_day = {}
+        min_spent_day = {}
+
         if day_wise_spending_dict:
-            max_date=max(day_wise_spending_dict,key=day_wise_spending_dict.get)
-            max_value = day_wise_spending_dict[max_date]
-            max_spent_day[max_date]=max_value
+            max_date = max(day_wise_spending_dict, key=day_wise_spending_dict.get)
+            min_date = min(day_wise_spending_dict, key=day_wise_spending_dict.get)
 
-            min_date=min(day_wise_spending_dict,key=day_wise_spending_dict.get)
-            min_value = day_wise_spending_dict[min_date]
-            min_spent_day[min_date]=min_value
+            max_spent_day = {max_date: day_wise_spending_dict[max_date]}
+            min_spent_day = {min_date: day_wise_spending_dict[min_date]}
 
+        return {
+            "action": "expenses",
+            "total_expenses": total_expenses,
+            "total_received": total_received,
 
-        return {"action": "expenses",
-                "merchant_expense": merchant_exp,
-                "total":total_expenses,
-                "max_spent_day":max_spent_day,
-                "min_spent_day":min_spent_day,
-                "day_wise_spending": day_wise_spending(filtered, start, end)
-            }
+            **merchant_data,
+            **category_data,
+
+            "day_wise_spending": day_wise_spending_dict,
+            "max_spent_day": max_spent_day,
+            "min_spent_day": min_spent_day
+        }
 
 
 

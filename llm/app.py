@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Request
 import json
+import os
 from fastapi.responses import JSONResponse
 # from langchain_groq import ChatGroq
 from pydantic.v1 import BaseModel
@@ -10,6 +11,7 @@ import pandas as pd
 from chat import *
 
 JSON_FILE_PATH="data_array.json"
+BUDGET_JSON_PATH="budgets.json"
 
 app = FastAPI()
 
@@ -36,8 +38,15 @@ async def parseEmail(req:Request):
 
 @app.post("/chat")
 async def Bot(req:QueryReq):
-    df = pd.read_json("data_array.json")
-    resp = chatbot.respond_using_graph(df,req.query)
+    df = pd.read_json(JSON_FILE_PATH)
+    budgets_df = pd.DataFrame()
+    try:
+        if os.path.exists(BUDGET_JSON_PATH):
+            budgets_df = pd.read_json(BUDGET_JSON_PATH)
+    except ValueError:
+        budgets_df = pd.DataFrame()
+
+    resp = chatbot.respond_using_graph(df,req.query,budgets_df)
     return {"response": resp}
 
 @app.post("/updateData")

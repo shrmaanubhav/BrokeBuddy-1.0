@@ -15,21 +15,8 @@ model= AutoModelForSequenceClassification.from_pretrained("adith-regan/intent-cl
 tokenizer = AutoTokenizer.from_pretrained("adith-regan/intent-classifier")
 model.eval()
 
-def extract_action(query):
-    
-    encodings = tokenizer(query,padding="max_length",truncation=True,return_tensors="pt")
 
-    out=model(**encodings)
-    pred=out.logits.argmax(dim=-1).item()
-    map={0:"budget",1:"expenses",2:"general",3:"insight",4:"merchant"}
-    return map[pred]
-
-
-#print(extract_action("How much did i spend on Suraj last week?"))
-
-
-
-MODEL = "llama-3.1-8b-instant"
+MODEL = "llama-3.3-70b-versatile"
 
 
 llm=ChatGroq(
@@ -38,12 +25,59 @@ llm=ChatGroq(
     temperature=0.1
 )
 
-
 llm2 =ChatGroq(
     model="openai/gpt-oss-20b",
     api_key=os.getenv("API_KEY"),
     temperature=0.1
 )
+
+
+class ExtractAction(BaseModel):
+    action:Literal["budget","expenses","general","insight","merchant"]
+
+action_parser = PydanticOutputParser(pydantic_object=ExtractAction)
+
+action_template = PromptTemplate(
+    input_variables=["query"],
+    partial_variables={"format_instructions":action_parser.get_format_instructions()},
+    template=""" Classify the user message into EXACTLY one of the following categories:
+    "budget", "expenses", "general", "insight",
+
+    Definitions:
+    - budget: budgets, limits, savings goals, thresholds.
+    - expenses: spending, totals, breakdowns, dates, transactions.
+    - general: greetings, meta-questions, unrelated queries.
+    - insight: trends, patterns, predictions, anomalies, summaries.
+    
+    based on {query}
+    Strictly follow this:
+    {format_instructions}
+
+"""
+)
+action_classifer_chain = action_template|llm2|action_parser
+
+def extract_action(query):
+
+    res = action_classifer_chain.invoke({"query":query}).action
+    return res
+
+    
+    # encodings = tokenizer(query,padding="max_length",truncation=True,return_tensors="pt")
+
+    # out=model(**encodings)
+    # pred=out.logits.argmax(dim=-1).item()
+    # map={0:"budget",1:"expenses",2:"general",3:"insight",4:"merchant"}
+    # return map[pred]
+
+
+#print(extract_action("How much did i spend on Suraj last week?"))
+
+
+extract_action("How much did i pay mom?")
+
+
+
 
 class ExtractionResult(BaseModel):
     merchant:Optional[str]

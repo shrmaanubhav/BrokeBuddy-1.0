@@ -6,8 +6,8 @@ Full-stack personal finance assistant that combines a React dashboard, an Expres
 - Track online and manual UPI transactions with search, caching, and nickname support for frequent payees.
 - OTP-based sign-up/login with JWT session cookies, password management, and account deletion.
 - Sync historical transactions from the LLM service, enrich them with nicknames, and push formatted data back for downstream analysis.
-- ChatBot using an underlying agent to help user talk to their expenses.
-- FastAPI layer wraps Groq-hosted LLMs to power the expense chatbot, natural-language querying, and merchant/date extraction.
+- ChatBot using underlying agents to help users talk to their expenses and budgets.
+- FastAPI layer wraps Groq-hosted LLMs to power the chatbot, natural-language querying, merchant/date extraction, and budget checks grounded on real transactions.
 
 ## Video Demo
 https://drive.google.com/file/d/1o93DdkPTtgBXnVGRwTtNTuHS7Dn4QlqZ/view?usp=sharing
@@ -37,6 +37,7 @@ SEProj/
 - **Profile management** – update display name, change password, delete account, and trigger a two-month historical sync.
 - **FineTuned DistillBert for intent Classification** – Used a sample of 400 prompts for classification training.
 - **Chatbot assistant** – LLM answers spend questions, extracts merchants/date ranges, and can log new expenses conversationally.
+- **Budget agent** – Uses `llm/budgets.json`, compares against actual expenses, and surfaces top related transactions to keep answers grounded.
 - **Nickname-to-UPI mapping** – central store in MongoDB updates both dashboard and LLM context automatically.
 - **OTP sign-up flow** – Gmail transport sends one-time codes, verified before user creation.
 
@@ -172,9 +173,20 @@ Visit `http://localhost:3000` once all services are up. The frontend talks to th
 - Chat queries route through the LangGraph pipeline (`llm/chat.py`) which:
   1. Classifies intent with the Hugging Face model.
   2. Extracts merchants and dates via Groq-hosted LLM prompts.
-  3. Aggregates spend metrics from `data_array.json`.
-  4. Optionally logs new expenses when intent detection confirms it.
+  3. Aggregates spend metrics from `data_array.json` (expense agent).
+  4. Runs budget checks against `llm/budgets.json` and actual expenses, surfacing top related transactions (budget agent).
+  5. Optionally logs new expenses when intent detection confirms it.
 
-## Architecture Diagram of the Agent
+## Budget Data
+- Dummy budgets live in `llm/budgets.json` (sample merchant and category caps).
+- The FastAPI `/chat` route loads both `data_array.json` and `budgets.json`, so budget queries work out of the box.
+- Budget answers are grounded on filtered transactions (top by amount) to avoid hallucinated spend.
+
+## Needs to be done
+- Implement add-expense persistence: replace the `add_expense_in_database` placeholder in `llm/utils.py` with a real Express/FastAPI call.
+- Frontend: surface budget views and chat support (currently only backend/bot logic is wired).
+- Backend: add a CRUD endpoint for budgets (read/write `llm/budgets.json` or a DB model) and plumb it into the chatbot loader.
+- History: re-enable/chat history append in `ChatBot.add_to_history` if conversational context is desired.
+
+## Architecture Diagram of the Agent(Without the budget - needs to be updated)
 <img width="1024" height="1536" alt="ChatGPT Image Nov 6, 2025 at 02_04_20 PM" src="https://github.com/user-attachments/assets/178afeb3-05cb-49d8-ab53-c4de653044b6" />
-
