@@ -2,7 +2,7 @@ import express from "express";
 import {
   getNicknames,
   saveNickname,
-} from "../controllers/nicknameController.js";
+} from "../controllers/nickname.controller.js";
 
 const router = express.Router();
 

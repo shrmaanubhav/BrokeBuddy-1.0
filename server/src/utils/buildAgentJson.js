@@ -1,5 +1,5 @@
-import onlineTransaction from "../models/onlineTransaction.js";
-import Nickname from "../models/Nickname.js";
+import onlineTransaction from "../models/online-transaction.model.js";
+import Nickname from "../models/nickname.model.js";
 
 export const buildAgentJson = async (email) => {
   

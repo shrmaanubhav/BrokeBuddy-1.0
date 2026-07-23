@@ -1,7 +1,7 @@
-import User from "../models/User.js";
-import Nickname from "../models/Nickname.js";
-import manualTransaction from "../models/manualTransaction.js";
-import onlineTransaction from "../models/onlineTransaction.js";
+import User from "../models/user.model.js";
+import Nickname from "../models/nickname.model.js";
+import manualTransaction from "../models/manual-transaction.model.js";
+import onlineTransaction from "../models/online-transaction.model.js";
 import bcrypt from "bcrypt";
 import { buildAgentJson } from "../utils/buildAgentJson.js";
 export const getMyProfile = async (req, res) => {

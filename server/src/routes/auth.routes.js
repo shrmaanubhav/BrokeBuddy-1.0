@@ -8,9 +8,9 @@ import {
   verifyOTP,
   sendOTP,
   resetPass,
-} from "../controllers/authController.js";
+} from "../controllers/auth.controller.js";
 
-import { protectRoute } from "../middleware/authMiddleware.js";
+import { protectRoute } from "../middleware/auth.middleware.js";
 
 router.post("/signup", signup);
 router.post("/login", login);

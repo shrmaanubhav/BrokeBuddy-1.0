@@ -1,4 +1,4 @@
-import Nickname from "../models/Nickname.js";
+import Nickname from "../models/nickname.model.js";
 import { buildAgentJson } from "../utils/buildAgentJson.js";
 export const getNicknames = async (req, res) => {
   try {

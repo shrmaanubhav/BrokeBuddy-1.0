@@ -1,12 +1,12 @@
 import express from "express";
-import { protectRoute } from "../middleware/authMiddleware.js";
+import { protectRoute } from "../middleware/auth.middleware.js";
 import {
   changeName,
   changePassword,
   deleteAccount,
   getMyProfile,
   updateUserData,
-} from "../controllers/profileController.js";
+} from "../controllers/profile.controller.js";
 
 const router = express.Router();
 router.get("/me", protectRoute, getMyProfile);

@@ -1,6 +1,6 @@
-import Nickname from "../models/Nickname.js";
-import manualTransaction from "../models/manualTransaction.js";
-import onlineTransaction from "../models/onlineTransaction.js";
+import Nickname from "../models/nickname.model.js";
+import manualTransaction from "../models/manual-transaction.model.js";
+import onlineTransaction from "../models/online-transaction.model.js";
 
 const fetchExpensesFromPython = async (email, startDate, endDate) => {
   const data = { email, date: startDate, endDate };

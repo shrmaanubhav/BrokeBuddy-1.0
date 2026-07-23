@@ -1,7 +1,7 @@
-import User from "../models/User.js";
+import User from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-import TempUser from "../models/tempUser.js";
+import TempUser from "../models/temp-user.model.js";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 
