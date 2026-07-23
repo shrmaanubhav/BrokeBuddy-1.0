@@ -3,7 +3,7 @@ import Nickname from "../models/nickname.model.js";
 import manualTransaction from "../models/manual-transaction.model.js";
 import onlineTransaction from "../models/online-transaction.model.js";
 import bcrypt from "bcrypt";
-import { buildAgentJson } from "../utils/buildAgentJson.js";
+import { buildAgentContext } from "./agent-context.service.js";
 
 export const getUserProfile = async (userId) => {
   const user = await User.findById(userId).select("-password");

@@ -1,5 +1,5 @@
 import Nickname from "../models/nickname.model.js";
-import { buildAgentJson } from "../utils/buildAgentJson.js";
+import { buildAgentContext } from "./agent-context.service.js";
 
 export const getUserNicknamesMap = async (email) => {
   const nicknamesArray = await Nickname.find({ userEmail: email });
