@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum TransactionSource {
+  MANUAL
+  EMAIL
+}
+
+enum ExpenseCategory {
+  DINING
+  TRAVEL
+  SHOPPING
+  BILLS
+  SUBSCRIPTIONS
+  OTHER
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+
+  transactions Transaction[]
+  nicknames    Nickname[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([email])
+}
+
+model TempUser {
+  id         String   @id @default(cuid())
+  name       String?
+  email      String   @unique
+  otp        String
+  verified   Boolean  @default(false)
+  expiresAt  DateTime
+
+  createdAt  DateTime @default(now())
+
+  @@index([email])
+  @@index([expiresAt])
+}
+
+model Transaction {
+  id              String   @id @default(cuid())
+
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  source          TransactionSource
+
+  amount          Float
+  debited         Boolean
+
+  transactionDate DateTime
+
+  category        ExpenseCategory @default(OTHER)
+
+  merchant        String?
+  notes           String?
+  upiId           String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@index([transactionDate])
+  @@index([source])
+  @@index([upiId])
+}
+
+model Nickname {
+  id        String @id @default(cuid())
+
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  upiId     String
+  nickname  String
+
+  @@unique([userId, upiId])
+
+  @@index([userId])
+  @@index([upiId])
+}
