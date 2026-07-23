@@ -5,7 +5,7 @@ from typing import Optional,Literal
 from langchain_core.output_parsers import PydanticOutputParser,StrOutputParser
 from langchain_core.prompts import PromptTemplate
 from langchain_groq import ChatGroq
-from langchain.schema.runnable import RunnableBranch
+from langchain_core.runnables import RunnableBranch
 import os
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
@@ -183,7 +183,7 @@ def updateData(email):
     data_arr=[]
     for txn in transactions:
         txn_date=datetime.strptime(txn['date'],'%d-%b-%Y')
-        data_arr
+        data_arr.append((txn_date, txn))
         
 
 #print(handle_add_expense("Add an expense of 500 on Amazon for groceries on 5th Aug 2024"))

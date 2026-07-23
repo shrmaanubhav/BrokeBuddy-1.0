@@ -1,8 +1,8 @@
 
 import pandas as pd
-from  utils import *
-from utils import filter_date, get_total_spent, day_wise_spending
-from agents.base import Agent
+from ..utils import *
+from ..utils import filter_date, get_total_spent, day_wise_spending, compute_merchant_expenses, compute_category_expenses
+from .base import Agent
 
 
 

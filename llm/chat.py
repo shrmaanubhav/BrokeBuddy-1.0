@@ -5,6 +5,8 @@ from langchain_core.output_parsers import StrOutputParser,PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
 from utils import *
 from utils2 import *
+from utils import match_merchant_name, add_expense_in_database
+from utils2 import handle_add_expense, extraction_chain
 from pydantic import BaseModel
 from typing import TypedDict,Optional,Any,Dict
 import datetime
@@ -281,11 +283,11 @@ class ChatBot():
         return merchant,start,end
 
     def add_to_history(self,query,resp,data):
-        # self.history.append({
-        #     "User_Query":query,
-        #     "agent_data":data,
-        #     "Response":resp
-        # })
+        self.history.append({
+            "User_Query":query,
+            "agent_data":data,
+            "Response":resp
+        })
         if(len(self.history)>3):
             self.history=self.history[-3:]
     
@@ -347,10 +349,3 @@ if __name__ == "__main__":
 
         response = chatbot.respond_using_graph(df, query, budgets_df)
         print(f"Assistant: {response}\n")
-    print(ext("How much did i spend on Suraj last week?"))
-
-    print(extract_merchant("How much have i spent on zepto last month"))
-    resp=extraction_chain.invoke({"query":"How much did I spend last month on Zepto","today":datetime.datetime.today().strftime("%-d-%b-%Y")})
-    
-    
-    print(resp.merchant)

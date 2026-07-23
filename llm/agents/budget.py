@@ -1,6 +1,6 @@
 import pandas as pd
-from utils import compute_category_expenses, compute_merchant_expenses, filter_budgets, filter_date, get_total_spent
-from agents.base import Agent
+from ..utils import compute_category_expenses, compute_merchant_expenses, filter_budgets, filter_date, get_total_spent
+from .base import Agent
 
 
 class Budget(Agent):
