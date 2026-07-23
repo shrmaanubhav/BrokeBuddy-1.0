@@ -32,7 +32,7 @@ export default function ChatBot() {
     setInputValue("");
     setIsTyping(true);
     try {
-      const resp = await fetch('http://localhost:8000/chat', {
+      const resp = await fetch('http://localhost:5000/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
