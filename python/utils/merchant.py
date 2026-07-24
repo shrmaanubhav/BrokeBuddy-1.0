@@ -12,6 +12,7 @@ merchant_list=['Google Manda',
  'ASHOK KUMAR G',
  'SHIVKARANSEN Pay',
  'Zepto Market',
+ 'Swiggy',
  'LAL SAHAB SHUKLA']
 
 category_list=['Misc', 'Grocery', 'Coffee', 'Food']
