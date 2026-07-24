@@ -5,7 +5,7 @@ import cookieParser from "cookie-parser";
 import prisma from "./lib/prisma.js";
 
 import authRoutes from "./routes/auth.routes.js";
-import expenseRoutes from "./routes/expense.routes.js";
+import transactionRoutes from "./routes/transaction.routes.js";
 import nicknameRoutes from "./routes/nickname.routes.js";
 import profileRoutes from "./routes/profile.routes.js";
 
@@ -46,9 +46,10 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
-app.use("/api/expense", expenseRoutes);
+app.use("/api/transactions", transactionRoutes);
 app.use("/api/nicknames", nicknameRoutes);
 app.use("/api/profile", profileRoutes);
+
 
 const PORT = process.env.PORT || 4000;
 

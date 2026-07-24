@@ -1,14 +1,35 @@
-import OnlineTransaction from "../models/online-transaction.model.js";
-import Nickname from "../models/nickname.model.js";
+import prisma from "../lib/prisma.js";
+import { TransactionSource } from "@prisma/client";
 
-export const buildAgentContext = async (email) => {
-  const transactions = await OnlineTransaction.find({
-    userEmail: email,
-  }).lean();
+export const buildAgentContext = async (userId) => {
+  const transactions = await prisma.transaction.findMany({
+    where: {
+      userId,
+      source: TransactionSource.EMAIL,
+    },
+    select: {
+      id: true,
+      debited: true,
+      upiId: true,
+      merchant: true,
+      amount: true,
+      transactionDate: true,
+      category: true,
+    },
+    orderBy: {
+      transactionDate: "desc",
+    },
+  });
 
-  const nicknames = await Nickname.find({
-    userEmail: email,
-  }).lean();
+  const nicknames = await prisma.nickname.findMany({
+    where: {
+      userId,
+    },
+    select: {
+      upiId: true,
+      nickname: true,
+    },
+  });
 
   const nicknameMap = new Map();
 
@@ -20,16 +41,24 @@ export const buildAgentContext = async (email) => {
   }
 
   return transactions.map((tx) => ({
-    Status: tx.DEBITED ? "DEBITED" : "CREDITED",
-    Id: tx._id.toString(),
-    UPI_id: tx.UPI_ID,
+    Status: tx.debited ? "DEBITED" : "CREDITED",
+
+    Id: tx.id,
+
+    UPI_id: tx.upiId,
+
     Name:
-      nicknameMap.get(tx.UPI_ID.toLowerCase()) ??
-      tx.UPI_ID.match(/^[A-Za-z0-9]+/)?.[0] ??
+      nicknameMap.get(tx.upiId?.toLowerCase()) ??
+      tx.merchant ??
+      tx.upiId?.match(/^[A-Za-z0-9]+/)?.[0] ??
       "Unknown",
-    Balance: tx.balance ?? 0,
-    Transaction_Amount: tx.COST,
-    Date: tx.date,
-    Category: tx.category ?? "Uncategorized",
+
+    Balance: 0,
+
+    Transaction_Amount: tx.amount,
+
+    Date: tx.transactionDate,
+
+    Category: tx.category,
   }));
 };

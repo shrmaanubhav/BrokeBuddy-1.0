@@ -1,8 +1,9 @@
-import onlineTransaction from "../models/online-transaction.model.js";
+import prisma from "../lib/prisma.js";
+import { TransactionSource } from "@prisma/client";
 import { buildAgentContext } from "./agent-context.service.js";
 
-export const syncUserData = async (email) => {
-  // Calculate the date 60 days ago
+export const syncUserData = async (userId, email) => {
+  // Calculate date 60 days ago
   const date = new Date();
   date.setDate(date.getDate() - 60);
 
@@ -12,8 +13,8 @@ export const syncUserData = async (email) => {
 
   const date_2mon = `${day}-${month}-${year}`;
 
-  // Fetch expenses from Python backend
-  const resp = await fetch("http://localhost:8000/expense", {
+  // Fetch transactions from Python backend
+  const resp = await fetch("http://localhost:5000/expense", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -24,47 +25,38 @@ export const syncUserData = async (email) => {
     }),
   });
 
+  if (!resp.ok) {
+    throw new Error("FAILED_TO_FETCH_TRANSACTIONS");
+  }
+
   const data = await resp.json();
 
   const transactions = data.Transactions || [];
 
-  const formattedTxns = transactions.map((txn) => ({
-    userEmail: email,
-    UPI_ID: txn.UPI_ID,
-    nickname: txn.nicknameId,
-    COST: txn.COST,
-    DEBITED: txn.DEBITED,
-    date: txn.date,
-  }));
+  if (transactions.length > 0) {
+    await prisma.transaction.createMany({
+      data: transactions.map((txn) => ({
+        userId,
 
-  const bulkOps = formattedTxns.map((txn) => ({
-    updateOne: {
-      filter: {
-        userEmail: txn.userEmail,
-        UPI_ID: txn.UPI_ID,
-        COST: txn.COST,
-        date: txn.date,
-      },
-      update: {
-        $setOnInsert: {
-          userEmail: email,
-          UPI_ID: txn.UPI_ID,
-          COST: txn.COST,
-          DEBITED: txn.DEBITED,
-          date: txn.date,
-        },
-      },
-      upsert: true,
-    },
-  }));
+        source: TransactionSource.EMAIL,
 
-  if (bulkOps.length > 0) {
-    await onlineTransaction.bulkWrite(bulkOps);
+        amount: Number(txn.COST),
+
+        debited: txn.DEBITED,
+
+        transactionDate: new Date(txn.date),
+
+        upiId: txn.UPI_ID?.trim().toLowerCase() || null,
+
+        merchant: txn.nicknameId?.trim() || null,
+      })),
+      skipDuplicates: true,
+    });
   }
 
-  const formatted = await buildAgentContext(email);
+  const formatted = await buildAgentContext(userId);
 
-  await fetch("http://localhost:8000/updateData", {
+  await fetch("http://localhost:5000/updateData", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
