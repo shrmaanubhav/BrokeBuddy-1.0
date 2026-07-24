@@ -128,24 +128,19 @@ export const deleteAccount = async (req, res) => {
 };
 
 export const updateUserData = async (req, res) => {
-  const { email } = req.body;
-
-  if (!email) {
-    return res.status(400).json({
-      msg: "Email is required.",
-    });
-  }
-
   try {
-    await transactionSyncService.syncUserData(email);
+    await transactionSyncService.syncUserData(
+      req.user.id,
+      req.user.email
+    );
 
-    res.status(200).json({
+    return res.status(200).json({
       msg: "Synced and formatted successfully.",
     });
   } catch (error) {
     console.error("Error updating user data:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       msg: "Error updating data.",
       error: error.message,
     });

@@ -13,6 +13,6 @@ router.get("/me", protectRoute, getMyProfile);
 router.post("/name", protectRoute, changeName);
 router.post("/password", protectRoute, changePassword);
 router.delete("/account", protectRoute, deleteAccount);
-router.post("/data",protectRoute,updateUserData)
+router.post("/updateData",protectRoute,updateUserData)
 
 export default router;
