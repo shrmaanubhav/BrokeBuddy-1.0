@@ -7,7 +7,7 @@ from utils.analytics import (
 )
 
 from utils.budget import filter_budgets
-from .base import BaseAgent
+from .base_agent import BaseAgent
 
 
 class Budget(BaseAgent):

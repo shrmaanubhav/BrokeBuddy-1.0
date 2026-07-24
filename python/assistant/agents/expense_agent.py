@@ -8,7 +8,7 @@ from utils.analytics import (
     compute_category_expenses,
 )
 
-from .base import BaseAgent
+from .base_agent import BaseAgent
 
 
 
