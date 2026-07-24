@@ -1,4 +1,4 @@
-from chat import ChatBot
+from assistant.chatbot import ChatBot
 
 chatbot = ChatBot()
 chatbot.initialize()

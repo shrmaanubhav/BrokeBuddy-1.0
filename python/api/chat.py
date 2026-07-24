@@ -5,7 +5,7 @@ import pandas as pd
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
-from services.chatbot import chatbot
+from services.chatbot_service import chatbot
 
 router = APIRouter()
 
