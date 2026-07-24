@@ -4,7 +4,7 @@ from assistant.graph import build_graph
 from assistant.prompts import build_response_chains
 from assistant.state import default_state
 
-from utils2 import llm
+from assistant.llm import llm
 
 
 class ChatBot:

@@ -3,12 +3,12 @@ import datetime
 from dateutil.relativedelta import relativedelta
 
 from .extraction import extract_merchant_date
-from utils2 import handle_add_expense
+from assistant.expense import handle_add_expense
 from .state import ChatState
 
 # TODO: Replace these with their final locations once refactoring is complete.
 from utils import add_expense_in_database
-from utils2 import extract_action
+from assistant.classifier import extract_action
 
 
 DEFAULT_RESPONSE = "Sorry, can't help you with that."
