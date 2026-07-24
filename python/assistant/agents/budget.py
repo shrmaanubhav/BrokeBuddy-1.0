@@ -1,5 +1,12 @@
 import pandas as pd
-from utils import compute_category_expenses, compute_merchant_expenses, filter_budgets, filter_date, get_total_spent
+from utils.analytics import (
+    compute_category_expenses,
+    compute_merchant_expenses,
+    filter_date,
+    get_total_spent,
+)
+
+from utils.budget import filter_budgets
 from .base import BaseAgent
 
 

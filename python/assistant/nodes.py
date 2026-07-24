@@ -6,8 +6,6 @@ from .extraction import extract_merchant_date
 from assistant.expense import handle_add_expense
 from .state import ChatState
 
-# TODO: Replace these with their final locations once refactoring is complete.
-from utils import add_expense_in_database
 from assistant.classifier import extract_action
 
 
@@ -142,11 +140,6 @@ def generate_node(chatbot, state: ChatState) -> ChatState:
             date = result.date
             merchant = result.merchant
 
-            add_expense_in_database(
-                merchant,
-                date,
-                amount,
-            )
 
             response = (
                 f"Noted an expense of {amount} on {merchant} at {date}."

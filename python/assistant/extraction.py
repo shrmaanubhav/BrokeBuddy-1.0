@@ -6,7 +6,7 @@ from langchain_core.prompts import PromptTemplate
 from pydantic import BaseModel
 
 from assistant.llm import llm
-from utils import match_merchant_name
+from utils.merchant import match_merchant_name
 
 
 class ExtractionResult(BaseModel):
