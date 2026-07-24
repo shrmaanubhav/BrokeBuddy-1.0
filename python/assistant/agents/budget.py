@@ -1,9 +1,9 @@
 import pandas as pd
 from utils import compute_category_expenses, compute_merchant_expenses, filter_budgets, filter_date, get_total_spent
-from .base import Agent
+from .base import BaseAgent
 
 
-class Budget(Agent):
+class Budget(BaseAgent):
     def __init__(self):
         super().__init__("budget")
 

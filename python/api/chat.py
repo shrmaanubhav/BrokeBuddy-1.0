@@ -3,17 +3,14 @@ import os
 
 import pandas as pd
 from fastapi import APIRouter, Request
-from pydantic.v1 import BaseModel
+from pydantic import BaseModel
 
-from chat import ChatBot
+from services.chatbot import chatbot
 
 router = APIRouter()
 
 JSON_FILE_PATH = "assets/data_array.json"
 BUDGET_JSON_PATH = "assets/budgets.json"
-
-chatbot = ChatBot()
-chatbot.initialize()
 
 
 class QueryReq(BaseModel):

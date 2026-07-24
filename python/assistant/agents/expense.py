@@ -2,12 +2,12 @@
 import pandas as pd
 from utils import *
 from utils import filter_date, get_total_spent, day_wise_spending, compute_merchant_expenses, compute_category_expenses
-from .base import Agent
+from .base import BaseAgent
 
 
 
 
-class ExpenseAgent(Agent):
+class ExpenseAgent(BaseAgent):
     def __init__(self):
         super().__init__("expenses")
     
