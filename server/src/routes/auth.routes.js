@@ -1,26 +1,64 @@
 import express from "express";
-const router = express.Router();
-
-import {
-  signup,
-  login,
-  logout,
-  verifyOTP,
-  sendOTP,
-  resetPass,
-} from "../controllers/auth.controller.js";
+import passport from "passport";
+import prisma from "../lib/prisma.js";
+import { googleCallback, logout } from "../controllers/auth.controller.js";
 
 import { protectRoute } from "../middleware/auth.middleware.js";
 
-router.post("/signup", signup);
-router.post("/login", login);
-router.post("/logout", logout);
-router.post("/verifyOTP", verifyOTP);
-router.post("/sendOTP", sendOTP);
-router.post("/resetPass", resetPass);
+const router = express.Router();
+/* ---------------- Google OAuth ---------------- */
 
-router.get("/checkAuth", protectRoute, (req, res) => {
-  res.json({ msg: "Welcome!", userId: req.user.id });
+router.get(
+  "/google",
+  passport.authenticate("google", {
+    scope: [
+      "profile",
+      "email",
+      "https://www.googleapis.com/auth/gmail.readonly",
+    ],
+    accessType: "offline",
+    prompt: "consent",
+    session: false,
+  })
+);
+
+router.get(
+  "/google/callback",
+  passport.authenticate("google", {
+    failureRedirect: `${process.env.FRONTEND_URL}/login`,
+    session: false,
+  }),
+  googleCallback
+);
+
+/* ---------------------------------------------- */
+
+router.get("/checkAuth", protectRoute, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        picture: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        msg: "User not found",
+      });
+    }
+
+    return res.status(200).json(user);
+  } catch (err) {
+    console.error(err);
+
+    return res.status(500).json({
+      msg: "Server error",
+    });
+  }
 });
 
 export default router;

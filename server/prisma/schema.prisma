@@ -8,6 +8,60 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+model User {
+  id                 String   @id @default(cuid())
+
+  name               String
+  email              String   @unique
+
+  googleId           String   @unique
+  picture            String?
+
+  googleRefreshToken String?
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  transactions       Transaction[]
+  nicknames          Nickname[]
+}
+
+model Transaction {
+  id              String            @id @default(cuid())
+  userId          String
+  source          TransactionSource
+  amount          Float
+  debited         Boolean
+  transactionDate DateTime
+  category        ExpenseCategory   @default(OTHER)
+  merchant        String?
+  notes           String?
+  upiId           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, source, amount, transactionDate, upiId])
+  @@index([userId])
+  @@index([transactionDate])
+  @@index([source])
+  @@index([upiId])
+}
+
+model Nickname {
+  id       String @id @default(cuid())
+  userId   String
+  upiId    String
+  nickname String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, upiId])
+  @@index([userId])
+  @@index([upiId])
+}
+
 enum TransactionSource {
   MANUAL
   EMAIL
@@ -20,78 +74,4 @@ enum ExpenseCategory {
   BILLS
   SUBSCRIPTIONS
   OTHER
-}
-
-model User {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-
-  transactions Transaction[]
-  nicknames    Nickname[]
-
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  @@index([email])
-}
-
-model TempUser {
-  id         String   @id @default(cuid())
-  name       String?
-  email      String   @unique
-  otp        String
-  verified   Boolean  @default(false)
-  expiresAt  DateTime
-
-  createdAt  DateTime @default(now())
-
-  @@index([email])
-  @@index([expiresAt])
-}
-
-model Transaction {
-  id              String   @id @default(cuid())
-
-  userId          String
-  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  source          TransactionSource
-
-  amount          Float
-  debited         Boolean
-
-  transactionDate DateTime
-
-  category        ExpenseCategory @default(OTHER)
-
-  merchant        String?
-  notes           String?
-  upiId           String?
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@unique([userId, source, amount, transactionDate, upiId])
-
-  @@index([userId])
-  @@index([transactionDate])
-  @@index([source])
-  @@index([upiId])
-}
-
-model Nickname {
-  id        String @id @default(cuid())
-
-  userId    String
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  upiId     String
-  nickname  String
-
-  @@unique([userId, upiId])
-
-  @@index([userId])
-  @@index([upiId])
 }

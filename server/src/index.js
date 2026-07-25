@@ -1,7 +1,9 @@
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
+import "./config/env.js";
 import cookieParser from "cookie-parser";
+import passport from "./config/passport.js";
+
 import prisma from "./lib/prisma.js";
 
 import authRoutes from "./routes/auth.routes.js";
@@ -9,12 +11,14 @@ import transactionRoutes from "./routes/transaction.routes.js";
 import nicknameRoutes from "./routes/nickname.routes.js";
 import profileRoutes from "./routes/profile.routes.js";
 
-dotenv.config();
+// dotenv.config();
 
 const app = express();
 
 app.use(cookieParser());
 app.use(express.json());
+
+app.use(passport.initialize());
 
 const allowedOrigins = [
   "http://localhost:5173",
@@ -49,7 +53,6 @@ app.use("/api/auth", authRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/nicknames", nicknameRoutes);
 app.use("/api/profile", profileRoutes);
-
 
 const PORT = process.env.PORT || 4000;
 
