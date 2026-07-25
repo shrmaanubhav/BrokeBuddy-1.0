@@ -1,17 +1,13 @@
 import prisma from "../lib/prisma.js";
-import bcrypt from "bcrypt";
-
-const SALT_ROUNDS = 10;
 
 export const getUserProfile = async (userId) => {
   const user = await prisma.user.findUnique({
-    where: {
-      id: userId,
-    },
+    where: { id: userId },
     select: {
       id: true,
       name: true,
       email: true,
+      picture: true,
       createdAt: true,
       updatedAt: true,
     },
@@ -42,42 +38,6 @@ export const updateUserName = async (userId, newName) => {
     }
     throw err;
   }
-};
-
-export const updateUserPassword = async (
-  userId,
-  currentPassword,
-  newPassword
-) => {
-  const user = await prisma.user.findUnique({
-    where: {
-      id: userId,
-    },
-  });
-
-  if (!user) {
-    throw new Error("USER_NOT_FOUND");
-  }
-
-  const isMatch = await bcrypt.compare(
-    currentPassword,
-    user.passwordHash
-  );
-
-  if (!isMatch) {
-    throw new Error("INCORRECT_PASSWORD");
-  }
-
-  const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
-
-  await prisma.user.update({
-    where: {
-      id: userId,
-    },
-    data: {
-      passwordHash,
-    },
-  });
 };
 
 export const deleteUserAccount = async (userId) => {

@@ -60,48 +60,6 @@ export const changeName = async (req, res) => {
   }
 };
 
-export const changePassword = async (req, res) => {
-  const { currentPassword, newPassword } = req.body;
-  const userId = req.user.id;
-
-  if (!currentPassword || !newPassword) {
-    return res.status(400).json({
-      msg: "Please provide both current and new passwords.",
-    });
-  }
-
-  try {
-    await profileService.updateUserPassword(
-      userId,
-      currentPassword,
-      newPassword
-    );
-
-    res.status(200).json({
-      msg: "Password updated successfully.",
-    });
-  } catch (error) {
-    if (error.message === "USER_NOT_FOUND") {
-      return res.status(404).json({
-        msg: "User not found.",
-      });
-    }
-
-    if (error.message === "INCORRECT_PASSWORD") {
-      return res.status(400).json({
-        msg: "Incorrect current password.",
-      });
-    }
-
-    console.error("Change Password Error:", error);
-
-    res.status(500).json({
-      msg: "Server error updating password.",
-      error: error.message,
-    });
-  }
-};
-
 export const deleteAccount = async (req, res) => {
   const userId = req.user.id;
 
@@ -127,7 +85,7 @@ export const deleteAccount = async (req, res) => {
   }
 };
 
-export const updateUserData = async (req, res) => {
+export const syncTransactions = async (req, res) => {
   try {
     await transactionSyncService.syncUserData(
       req.user.id,
@@ -135,13 +93,13 @@ export const updateUserData = async (req, res) => {
     );
 
     return res.status(200).json({
-      msg: "Synced and formatted successfully.",
+      msg: "Transactions synced successfully.",
     });
   } catch (error) {
-    console.error("Error updating user data:", error);
+    console.error("Transaction sync error:", error);
 
     return res.status(500).json({
-      msg: "Error updating data.",
+      msg: "Failed to sync transactions.",
       error: error.message,
     });
   }
