@@ -1,0 +1,238 @@
+* {
+  box-sizing: border-box;
+}
+
+.login-container {
+  min-height: 100vh;
+  background: transparent;
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+/* --- CARD --- */
+.login-card {
+  background: #1a1a1a;
+  padding: 3rem 2.5rem;
+  border-radius: 28px;
+  box-shadow: 0 8px 48px #00000044, 0 1.5px 8px #00000044;
+  width: 100%;
+  max-width: 420px;
+  border: 1.5px solid #646cff33;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* --- LOGO --- */
+.login-logo {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #8b5cf6, #3b82f6);
+  border-radius: 16px;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+/* --- TITLES --- */
+.login-title {
+  color: #bfc2ff;
+  font-size: 2.4rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.03em;
+  text-shadow: 0 4px 32px #646cff33;
+  text-align: center;
+}
+
+.login-subtitle {
+  color: #f4f3f0;
+  font-size: 1.08rem;
+  margin: 0 0 2.2rem 0;
+  line-height: 1.5;
+  text-align: center;
+  font-weight: 500;
+}
+
+/* --- FORM --- */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.login-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.login-label {
+  color: #8189ff;
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: 0.025em;
+}
+
+.login-input {
+  padding: 1rem 1.1rem;
+  border: 2px solid #646cff44;
+  border-radius: 14px;
+  font-size: 1.08rem;
+  background: #000000;
+  color: #ffffffde;
+  font-family: inherit;
+  outline: none;
+  font-weight: 500;
+}
+
+.login-input:focus {
+  border-color: #646cff;
+  background: #0c0c24;
+  box-shadow: 0 0 0 3px #646cff33;
+}
+
+/* --- BUTTON --- */
+.login-button {
+  padding: 1.1rem;
+  background: linear-gradient(90deg, #535bf2 0%, #646cff 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 14px;
+  font-size: 1.08rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  margin-top: 0.5rem;
+  letter-spacing: 0.025em;
+  font-family: inherit;
+  box-shadow: 0 4px 24px #646cff33;
+  text-align: center;
+}
+
+.login-button:hover:not(:disabled) {
+  background: linear-gradient(90deg, #747bff 0%, #535bf2 100%);
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 8px 32px #646cff55;
+}
+
+.login-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* --- LINKS --- */
+.login-link {
+  text-align: center;
+  margin-top: 2rem;
+}
+
+.login-link a {
+  color: #646cff;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: color 0.2s;
+  letter-spacing: 0.025em;
+}
+
+.login-link a:hover {
+  color: #535bf2;
+  text-decoration: underline;
+}
+
+/* --- ERROR --- */
+.login-error {
+  background: #0e0e2f;
+  border: 1px solid #646cff;
+  color: #b7baff;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 768px) {
+  .login-card {
+    padding: 2rem 1rem;
+    border-radius: 18px;
+  }
+  .login-title {
+    font-size: 2rem;
+  }
+  .login-input {
+    padding: 1rem;
+    font-size: 1rem;
+  }
+  .login-button {
+    padding: 1rem;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    padding: 1.2rem 0.5rem;
+  }
+  .login-title {
+    font-size: 1.3rem;
+  }
+}
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-wrapper .login-input {
+  width: 100%;
+  padding-right: 42px;
+  box-sizing: border-box;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  user-select: none;
+  font-size: 1.2rem;
+  opacity: 0.6;
+  transition: opacity 0.2s ease, transform 0.1s ease;
+}
+
+.toggle-password:hover {
+  opacity: 1;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.password-criteria {
+  list-style: none;
+  padding: 0;
+  font-size: 0.9rem;
+  margin: 10px 0 15px;
+}
+
+.password-criteria li {
+  color: red;
+  margin-bottom: 4px;
+}
+
+.password-criteria li.valid {
+  color: green;
+  font-weight: 500;
+}

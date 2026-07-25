@@ -1,0 +1,132 @@
+[
+  {
+    "Status": "DEBITED",
+    "Id": "447807314060",
+    "UPI_id": "paytmqr5ziyae@ptys",
+    "Name": "ASHOK KUMAR G",
+    "Balance": 6234.21,
+    "Transaction_Amount": 10.0,
+    "Date": "10-Aug-2025",
+    "Category": "Food"
+  },
+    {
+    "Status": "DEBITED",
+    "Id": "447807314060",
+    "UPI_id": "paytmqr5ziyae@ptys",
+    "Name": "ASHOK KUMAR G",
+    "Balance": 6234.21,
+    "Transaction_Amount": 30.0,
+    "Date": "10-Aug-2025",
+    "Category": "Food"
+  },
+   {
+    "Status": "DEBITED",
+    "Id": "818823211561",
+    "UPI_id": "zepto.payu@axisbank",
+    "Name": "Zepto Market",
+    "Balance": 5848.21,
+    "Transaction_Amount": 50.0,
+    "Date": "10-Aug-2025",
+    "Category": "Grocery"
+  },
+   {
+    "Status": "DEBITED",
+    "Id": "818823211561",
+    "UPI_id": "zepto.payu@axisbank",
+    "Name": "Zepto Market",
+    "Balance": 5848.21,
+    "Transaction_Amount": 100.0,
+    "Date": "10-Aug-2025",
+    "Category": "Grocery"
+  },
+    {
+    "Status": "DEBITED",
+    "Id": "447807314060",
+    "UPI_id": "paytmqr5ziyae@ptys",
+    "Name": "ASHOK KUMAR G",
+    "Balance": 6234.21,
+    "Transaction_Amount": 10.0,
+    "Date": "10-Aug-2025",
+    "Category": "Food"
+  },
+    {
+    "Status": "DEBITED",
+    "Id": "447807314060",
+    "UPI_id": "paytmqr5ziyae@ptys",
+    "Name": "ASHOK KUMAR G",
+    "Balance": 6234.21,
+    "Transaction_Amount": 10.0,
+    "Date": "10-Aug-2025",
+    "Category": "Food"
+  },
+  {
+    "Status": "DEBITED",
+    "Id": "470277861678",
+    "UPI_id": "paytmqr66h9kb@ptys",
+    "Name": "Suraj Singh):",
+    "Balance": 6214.21,
+    "Transaction_Amount": 20.0,
+    "Date": "10-Aug-2025",
+    "Category": "Food"
+  },
+  {
+    "Status": "DEBITED",
+    "Id": "980457543090",
+    "UPI_id": "paytmqr6jq6y5@ptys",
+    "Name": "PRATIBHA JAIS",
+    "Balance": 6114.21,
+    "Transaction_Amount": 100.0,
+    "Date": "11-Aug-2025",
+    "Category": "Coffee"
+  },
+  {
+    "Status": "DEBITED",
+    "Id": "245018642012",
+    "UPI_id": "Q394468547@ybl",
+    "Name": "LAL SAHAB SHUKLA",
+    "Balance": 6084.21,
+    "Transaction_Amount": 30.0,
+    "Date": "11-Aug-2025",
+    "Category": "Food"
+  },
+  {
+    "Status": "DEBITED",
+    "Id": "757621237856",
+    "UPI_id": "Q841400054@ybl",
+    "Name": "SHIVKARANSEN):Pay",
+    "Balance": 6064.21,
+    "Transaction_Amount": 20.0,
+    "Date": "12-Aug-2025",
+    "Category": "Food"
+  },
+  {
+    "Status": "DEBITED",
+    "Id": "818823211561",
+    "UPI_id": "zepto.payu@axisbank",
+    "Name": "Zepto Market",
+    "Balance": 5848.21,
+    "Transaction_Amount": 151.0,
+    "Date": "13-Aug-2025",
+    "Category": "Grocery"
+  },
+  {
+    "Status": "DEBITED",
+    "Id": "147811670363",
+    "UPI_id": "Q394263327@ybl",
+    "Name": "Manoj Canteen BH",
+    "Balance": 4689.21,
+    "Transaction_Amount": 15.0,
+    "Date": "21-Aug-2025",
+    "Category": "Food"
+  },
+  {
+    "Status": "DEBITED",
+    "Id": "646065792265",
+    "UPI_id": "playstore@axisbank",
+    "Name": "Google):Manda",
+    "Balance": 5801.21,
+    "Transaction_Amount": 2.0,
+    "Date": "14-Aug-2025",
+    "Category": "Misc"
+  }
+]

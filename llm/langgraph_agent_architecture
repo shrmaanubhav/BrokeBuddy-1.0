@@ -1,0 +1,40 @@
+digraph LangGraph_Agent {
+	bgcolor=white rankdir=LR splines=ortho
+	subgraph cluster_chatbot {
+		color=lightgrey label="ChatBot Orchestrator" style=filled
+		llm [label="LLM (Language Model)" shape=box]
+		parser [label="Output Parser" shape=box]
+		response_chains [label="Response Chains" shape=box]
+		agents [label="Agents (e.g. ExpenseAgent)" shape=box]
+		history [label="History Buffer" shape=box]
+		state [label="Current State" shape=box]
+		llm -> parser
+		parser -> response_chains
+		response_chains -> agents
+		agents -> state
+		state -> history
+	}
+	subgraph cluster_graph {
+		color=lightblue label="LangGraph Flow" style=filled
+		classify [label="classify_action_node
+→ extract_action()" shape=box]
+		extract [label="extract_data_node
+→ merchant_date(), ExpenseAgent.extract_data()" shape=box]
+		generate [label="generate_node
+→ LLM Response / Add Expense" shape=box]
+		classify -> extract
+		extract -> generate
+	}
+	user [label="User Query" color=lightyellow shape=ellipse style=filled]
+	df [label="DataFrame (Transaction Data)" color=grey shape=cylinder]
+	utils [label="utils / utils2
+(extract_action, extraction_chain, match_merchant_name)" color=lightgreen shape=note]
+	user -> classify
+	generate -> llm
+	extract -> df
+	classify -> utils [label="action detection"]
+	extract -> utils [label="merchant/date parsing"]
+	generate -> history [label="append response"]
+	response [label="Final Response to User" color=lightyellow shape=ellipse style=filled]
+	generate -> response
+}

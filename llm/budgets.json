@@ -1,0 +1,58 @@
+[
+  {
+    "name": "Groceries August",
+    "amount": 8000,
+    "start_date": "01-Aug-2024",
+    "end_date": "31-Aug-2024",
+    "merchant": null,
+    "category": "Grocery"
+  },
+  {
+    "name": "Coffee Treats",
+    "amount": 1500,
+    "start_date": "01-Aug-2024",
+    "end_date": "31-Aug-2024",
+    "merchant": null,
+    "category": "Coffee"
+  },
+  {
+    "name": "Zepto Cap",
+    "amount": 5000,
+    "start_date": "01-Oct-2025",
+    "end_date": "31-Oct-2025",
+    "merchant": "Zepto Market",
+    "category": null
+  },
+  {
+    "name": "VYAPAR November Cap",
+    "amount": 600,
+    "start_date": "01-Nov-2025",
+    "end_date": "30-Nov-2025",
+    "merchant": "VYAPAR",
+    "category": null
+  },
+  {
+    "name": "PAYTM November Limit",
+    "amount": 3000,
+    "start_date": "01-Nov-2025",
+    "end_date": "30-Nov-2025",
+    "merchant": "PAYTM",
+    "category": null
+  },
+  {
+    "name": "Gupta1 Spend Watch",
+    "amount": 2500,
+    "start_date": "01-Nov-2025",
+    "end_date": "30-Nov-2025",
+    "merchant": "Gupta1",
+    "category": null
+  },
+  {
+    "name": "November Misc Buffer",
+    "amount": 10000,
+    "start_date": "01-Nov-2025",
+    "end_date": "30-Nov-2025",
+    "merchant": null,
+    "category": "Uncategorized"
+  }
+]
