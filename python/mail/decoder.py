@@ -1,4 +1,10 @@
 import base64
+import re
+
+try:
+    from bs4 import BeautifulSoup
+except ImportError:
+    BeautifulSoup = None
 
 
 class GmailDecoder:
@@ -29,24 +35,53 @@ class GmailDecoder:
         return headers
 
     @staticmethod
+    def html_to_text(html: str) -> str:
+        if not html:
+            return ""
+
+        if BeautifulSoup:
+            return BeautifulSoup(
+                html,
+                "html.parser",
+            ).get_text(separator="\n", strip=True)
+
+        text = re.sub(r"(?i)<br\s*/?>|</p>|</div>|</tr>", "\n", html)
+        text = re.sub(r"<[^>]+>", "", text)
+        return re.sub(r"\n+", "\n", text).strip()
+
+    @staticmethod
+    def _extract_parts(payload: dict) -> list[tuple[str, str]]:
+        """
+        Return decoded body parts from the complete Gmail payload tree.
+        """
+        parts = []
+        mime_type = payload.get("mimeType", "")
+        data = payload.get("body", {}).get("data")
+
+        if data:
+            parts.append((
+                mime_type,
+                GmailDecoder.decode_base64(data),
+            ))
+
+        for part in payload.get("parts", []):
+            parts.extend(GmailDecoder._extract_parts(part))
+
+        return parts
+
+    @staticmethod
     def extract_body(payload: dict) -> str:
         """
-        Extract the email body from a Gmail payload.
-        Supports both simple and multipart messages.
+        Extract readable text from a Gmail payload.
         """
+        parts = GmailDecoder._extract_parts(payload)
 
-        # Simple message
-        if payload.get("body", {}).get("data"):
-            return GmailDecoder.decode_base64(
-                payload["body"]["data"]
-            )
+        for mime_type, body in parts:
+            if mime_type == "text/html":
+                return GmailDecoder.html_to_text(body)
 
-        # Multipart message
-        for part in payload.get("parts", []):
-            if part.get("mimeType") in ("text/plain", "text/html"):
-                data = part.get("body", {}).get("data")
-
-                if data:
-                    return GmailDecoder.decode_base64(data)
+        for mime_type, body in parts:
+            if mime_type == "text/plain":
+                return body.strip()
 
         return ""

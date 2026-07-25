@@ -1,63 +1,69 @@
 from datetime import datetime, timedelta
-import email
 
 from .client import GmailClient
 from .parser import parse_email
 from .aggregator import TransactionAggregator
-from config.settings import GMAIL_EMAIL, GMAIL_APP_PASSWORD
+from .settings import TRANSACTION_SENDER_EMAIL
+
+
+def _gmail_date(value: str) -> str:
+    parsed = datetime.strptime(value, "%d-%b-%Y")
+    return parsed.strftime("%Y/%m/%d")
 
 
 def get_transactions(
+    user_id: str,
     recipient: str,
     start_date: str,
     end_date: str | None = None,
 ):
     if end_date is None:
-        end_date = (
-            datetime.today() + timedelta(days=1)
-        ).strftime("%-d-%b-%Y")
+        default_end = datetime.today() + timedelta(days=1)
+        end_date = f"{default_end.day}-{default_end.strftime('%b-%Y')}"
 
-    client = GmailClient(
-        GMAIL_EMAIL,
-        GMAIL_APP_PASSWORD,
+    client = GmailClient()
+    aggregator = TransactionAggregator()
+    seen = set()
+    page_token = None
+
+    query = (
+        f"from:{TRANSACTION_SENDER_EMAIL} "
+        f"to:{recipient} "
+        f"after:{_gmail_date(start_date)} "
+        f"before:{_gmail_date(end_date)}"
     )
 
-    client.connect()
-
-    try:
-        email_ids = client.fetch_email_ids(
-            recipient,
-            start_date,
-            end_date,
+    while True:
+        response = client.list_messages(
+            user_id=user_id,
+            query=query,
+            max_results=100,
+            page_token=page_token,
         )
 
-        mail_data = client.fetch_messages(email_ids)
+        for item in response.get("messages", []):
+            message = client.get_message(
+                user_id=user_id,
+                message_id=item["id"],
+                fmt="full",
+            )
 
-        aggregator = TransactionAggregator()
-        seen = set()
-
-        for item in mail_data:
-
-            if not isinstance(item, tuple):
-                continue
-
-            msg = email.message_from_bytes(item[1])
-
-            transaction = parse_email(msg)
+            transaction = parse_email(message)
 
             if not transaction:
                 continue
 
-            txn_id = transaction["transaction_id"]
+            txn_id = transaction.transaction_id
 
             if txn_id in seen:
                 continue
 
             seen.add(txn_id)
-
             aggregator.add(transaction)
 
-        return aggregator.summary()
+        page_token = response.get("nextPageToken")
 
-    finally:
-        client.close()
+        if not page_token:
+            break
+
+    return aggregator.summary()

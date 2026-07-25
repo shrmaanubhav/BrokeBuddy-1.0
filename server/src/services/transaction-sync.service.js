@@ -20,6 +20,7 @@ export const syncUserData = async (userId, email) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
+      userId,
       email,
       date: date_2mon,
     }),

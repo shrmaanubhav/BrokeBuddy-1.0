@@ -28,10 +28,6 @@ class GmailAuth:
 
         if encrypted is None:
             raise ValueError("User has no refresh token.")
-        
-        print("Encrypted token:", encrypted)
-        print("Length:", len(encrypted))
-        print("Type:", type(encrypted))
 
         refresh_token = decrypt(encrypted)
 

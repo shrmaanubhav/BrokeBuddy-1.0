@@ -11,6 +11,7 @@ async def parse_email(req: Request):
     print("Raw JSON received:", data["email"])
 
     return get_transactions(
+        user_id=data.get("userId", data["email"]),
         recipient=data["email"],
         start_date=data["date"],
     )
