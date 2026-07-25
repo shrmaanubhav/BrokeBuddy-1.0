@@ -1,13 +1,13 @@
-import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import "./ExpensePage.css";
+import api from "../../lib/api";
+import "../Expenses/Expenses.css";
 import toast from "react-hot-toast";
 const HomePage = ({ setIsAuthenticated }) => {
   const navigate = useNavigate();
   const [name, setName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const userEmail = localStorage.getItem("userEmail") || "";
 
   const [isChangeUserModalOpen, setIsChangeUserModalOpen] = useState(false);
   const [isChangePassModalOpen, setIsChangePassModalOpen] = useState(false);
@@ -38,10 +38,8 @@ const HomePage = ({ setIsAuthenticated }) => {
       }
     };
 
-    if (userEmail) {
-      fetchUserProfile();
-    }
-  }, [userEmail]);
+    fetchUserProfile();
+  }, []);
 
   const clearCache = () => {
     localStorage.removeItem("cachedTransactions");
@@ -63,10 +61,8 @@ const HomePage = ({ setIsAuthenticated }) => {
 
   const handleLogout = async () => {
     try {
-      const res = await axios.post("http://localhost:4000/api/auth/logout");
+      const res = await api.post("/auth/logout");
       toast.success(res.data.msg || "Logged out");
-      localStorage.removeItem("userEmail");
-      localStorage.removeItem("name");
       clearCache();
       setIsAuthenticated(false);
       navigate("/");
@@ -87,7 +83,7 @@ const HomePage = ({ setIsAuthenticated }) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ email: userEmail }),
+        body: JSON.stringify(userEmail ? { email: userEmail } : {}),
       });
 
       if (!res.ok) {
@@ -150,7 +146,6 @@ const HomePage = ({ setIsAuthenticated }) => {
     }
 
     try {
-      const userEmail = localStorage.getItem("userEmail");
       if (!userEmail) {
         toast.error("User not logged in.");
         return;
@@ -190,7 +185,6 @@ const HomePage = ({ setIsAuthenticated }) => {
       return;
     }
     try {
-      const userEmail = localStorage.getItem("userEmail");
       if (!userEmail) {
         toast.error("User not logged in.");
         return;
@@ -230,7 +224,6 @@ const HomePage = ({ setIsAuthenticated }) => {
     }
 
     try {
-      const userEmail = localStorage.getItem("userEmail");
       if (!userEmail) {
         toast.error("User not logged in.");
         return;
@@ -253,7 +246,7 @@ const HomePage = ({ setIsAuthenticated }) => {
       if (setIsAuthenticated) {
         setIsAuthenticated(false);
       }
-      navigate("/login");
+      navigate("/");
     } catch (err) {
       console.error("Delete Account Error:", err.message);
       toast.error(err.message || "Failed to delete account");
@@ -293,14 +286,18 @@ const HomePage = ({ setIsAuthenticated }) => {
                   className="profile-button"
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
                 >
-                  {userEmail ? userEmail.substring(0, 1).toUpperCase() : "?"}
+                  {name
+                    ? name.substring(0, 1).toUpperCase()
+                    : userEmail
+                    ? userEmail.substring(0, 1).toUpperCase()
+                    : "?"}
                 </button>
 
                 {isProfileOpen && (
                   <div className="profile-dropdown">
                     <div className="dropdown-header">
                       Signed in as <br />
-                      <strong>{userEmail || "Not logged in"}</strong>
+                      <strong>{name || userEmail || "Not logged in"}</strong>
                     </div>
                     <ul className="dropdown-menu">
                       <li>
