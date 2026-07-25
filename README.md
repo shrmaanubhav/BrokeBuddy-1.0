@@ -1,11 +1,11 @@
 # BrokeBuddy
 
-Full-stack personal finance assistant that combines a React dashboard, an Express/MongoDB API, and a FastAPI + LangGraph service for expense analytics and conversational insights.
+Full-stack personal finance assistant that combines a React dashboard, an Express API, a Prisma-backed database, and a FastAPI + LangGraph service for expense analytics and conversational insights.
 
 ## Overview
 - Track online and manual UPI transactions with search, caching, and nickname support for frequent payees.
-- OTP-based sign-up/login with JWT session cookies, password management, and account deletion.
-- Sync historical transactions from the LLM service, enrich them with nicknames, and push formatted data back for downstream analysis.
+- Google OAuth login with JWT session cookies, profile management, and account deletion.
+- Sync historical Gmail transaction alerts, enrich them with nicknames, and push formatted data back for downstream analysis.
 - ChatBot using underlying agents to help users talk to their expenses and budgets.
 - FastAPI layer wraps Groq-hosted LLMs to power the chatbot, natural-language querying, merchant/date extraction, and budget checks grounded on real transactions.
 
@@ -14,21 +14,17 @@ https://drive.google.com/file/d/1o93DdkPTtgBXnVGRwTtNTuHS7Dn4QlqZ/view?usp=shari
 
 ## Architecture
 ```
-SEProj/
-├── server.js                # Express entrypoint
-├── controllers/             # Auth, expense, nickname, profile handlers
-├── models/                  # Mongoose schemas (users, transactions, nicknames)
-├── routes/                  # REST route registrations
-├── frontend/                # React SPA (login, dashboard, chatbot)
-├── llm/                     # FastAPI + LangChain chatbot service
-├── utils/                   # Helpers for building agent payloads
-└── req.txt                  # Python dependencies for the LLM service
+BrokeBuddy-1.0/
+├── server/                  # Express API, Prisma Client, auth/profile/transaction routes
+├── web-app/                 # React SPA
+├── python/                  # FastAPI + Gmail parser + LangGraph chatbot service
+└── test.py                  # Local Gmail API parser smoke test
 ```
 
 ```
-[React SPA] ⇄ (CORS, cookies) ⇄ [Express API] ⇄ [MongoDB]
+[React SPA] ⇄ (CORS, cookies) ⇄ [Express API] ⇄ [Prisma database]
                                      │
-                                     ├─ sync → /expense (FastAPI)
+                                     ├─ sync → /expense (FastAPI, Gmail API)
                                      └─ push nicknames → /updateFormattedData (FastAPI)
 ```
 
@@ -38,36 +34,44 @@ SEProj/
 - **FineTuned DistillBert for intent Classification** – Used a sample of 400 prompts for classification training.
 - **Chatbot assistant** – LLM answers spend questions, extracts merchants/date ranges, and can log new expenses conversationally.
 - **Budget agent** – Uses `llm/budgets.json`, compares against actual expenses, and surfaces top related transactions to keep answers grounded.
-- **Nickname-to-UPI mapping** – central store in MongoDB updates both dashboard and LLM context automatically.
-- **OTP sign-up flow** – Gmail transport sends one-time codes, verified before user creation.
+- **Nickname-to-UPI mapping** – database-backed nickname store updates both dashboard and LLM context automatically.
+- **Gmail alert parsing** – transaction sync reads Gmail API messages from `TRANSACTION_SENDER_EMAIL` only, defaulting to `kblalerts@kbl.bank.in`.
 
 ## Prerequisites
 - Node.js ≥ 18 and npm
-- Python ≥ 3.10 with `pip`
-- MongoDB instance (local or remote)
-- Gmail account with an App Password for transactional email
+- Python 3.11 with `pip`
+- Database URL compatible with the current Prisma schema
+- Google OAuth credentials with Gmail readonly scope
 - Groq API key (for LangChain `ChatGroq`)
 - Optional: Hugging Face token if the hosted intent classifier requires authentication
 
 ## Environment Variables
-Create a `.env` file in the repository root:
+Create `server/.env`:
 
-| Variable    | Description                                   |
-|-------------|-----------------------------------------------|
-| `PORT`      | Express port (defaults to 4000 in code)       |
-| `URL`       | MongoDB connection string                     |
-| `JWT_SECRET`| Secret for signing auth cookies               |
-| `MAIL_USER` | Gmail address that sends OTP emails           |
-| `MAIL_PASS` | Gmail App Password (not your account password)|
+| Variable | Description |
+|----------|-------------|
+| `PORT` | Express port, usually `4000` |
+| `JWT_SECRET` | Secret for signing auth cookies |
+| `DATABASE_URL` | Prisma runtime database URL |
+| `DIRECT_URL` | Prisma migration/direct database URL |
+| `GOOGLE_CLIENT_ID` | Google OAuth client id |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
+| `GOOGLE_CALLBACK_URL` | Google callback URL, for example `http://localhost:4000/api/auth/google/callback` |
+| `FRONTEND_URL` | Frontend URL, for example `http://127.0.0.1:3000/BrokeBuddy` |
+| `TOKEN_ENCRYPTION_KEY` | 64-character hex key for encrypting Gmail refresh tokens |
 
+Create `python/.env`:
 
-Create `llm/.env` for the chatbot service:
+| Variable | Description |
+|----------|-------------|
+| `GROQ_API_KEY` | Groq API key used by LangChain clients |
+| `DATABASE_URL` | Database URL used by the Python Gmail token lookup |
+| `GOOGLE_CLIENT_ID` | Google OAuth client id |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
+| `TOKEN_ENCRYPTION_KEY` | Same 64-character hex key used by the server |
+| `TRANSACTION_SENDER_EMAIL` | Gmail sender filter for transaction alerts. Defaults to `kblalerts@kbl.bank.in` |
 
-| Variable  | Description                            |
-|-----------|----------------------------------------|
-| `API_KEY` | Groq API key used by LangChain clients |
-
-Create `frontend/.env` for the admin login :
+Create `web-app/.env` for the admin login:
 
 | Variable  | Description                            |
 |-----------|----------------------------------------|
@@ -79,62 +83,79 @@ Never commit these files to version control.
 ## Setup
 1. **Install backend dependencies**
    ```bash
+   cd server
    npm install
+   npx prisma generate
    ```
 
 2. **Install frontend dependencies**
    ```bash
-   cd frontend
+   cd web-app
    npm install
    ```
 
-3. **Install Python dependencies for the LLM service**
+3. **Install Python dependencies for the FastAPI service**
    ```bash
-   cd llm
-   python -m venv .venv
-   source .venv/bin/activate  # Windows: .venv\Scripts\activate
-   pip install -r ../req.txt
+   cd python
+   python3.11 -m venv .venv311
+   source .venv311/bin/activate
+   pip install -r requirements.txt
    ```
 
-4. Ensure MongoDB is running and reachable at the URI you placed in `URL`.
+4. Ensure the database in `DATABASE_URL` is reachable and has the Prisma schema applied.
 
 ## Running the stack
 Use separate terminals (or a process manager) for each service:
 
 1. **Express API (Port 4000)**
    ```bash
-   npm install             # if you skipped earlier
-   nodemon server.js   # or: node server.js
+   cd server
+   npm run dev
    ```
 
-2. **React frontend (Port 3000 by default)**
+2. **FastAPI service (Port 5000)**
    ```bash
-   cd frontend
-   npm start               # CRA dev server
+   cd python
+   source .venv311/bin/activate
+   uvicorn app:app --host 127.0.0.1 --port 5000
    ```
 
-   The dev script in `package.json` points to Next.js; use `npm start` instead.
-
-3. **FastAPI + LLM service (Port 8000)**
+3. **React frontend (Port 3000)**
    ```bash
-   cd llm
-   source .venv/bin/activate
-   uvicorn app:app --reload --port 8000
+   cd web-app
+   HOST=127.0.0.1 PORT=3000 npm start
    ```
 
-Visit `http://localhost:3000` once all services are up. The frontend talks to the Express API at `http://localhost:4000`, which in turn calls the FastAPI service at `http://localhost:8000`.
+Visit `http://127.0.0.1:3000/BrokeBuddy` once all services are up. The frontend talks to the Express API at `http://localhost:4000`, and the Express API calls FastAPI at `http://localhost:5000`.
+
+## Gmail Parser Smoke Test
+`test.py` fetches Gmail API messages using the same sender filter as the production parser.
+
+```bash
+cd /Users/adithnr/Documents/GitHub/Agentiiv/BrokeBuddy-1.0
+source python/.venv311/bin/activate
+PYTHONPATH=python python test.py
+```
+
+By default the Gmail query is:
+
+```text
+from:kblalerts@kbl.bank.in
+```
+
+Override it in `python/.env`:
+
+```env
+TRANSACTION_SENDER_EMAIL="alerts@example.com"
+```
 
 ## Key API Endpoints
 
 ### Auth (`/api/auth`)
 | Method | Path         | Description                  |
 |--------|--------------|------------------------------|
-| POST   | `/signup`    | Register after OTP verify    |
-| POST   | `/login`     | Issue JWT cookie             |
-| POST   | `/logout`    | Clear auth cookie            |
-| POST   | `/sendOTP`   | Email a six-digit OTP        |
-| POST   | `/verifyOTP` | Mark temporary user verified |
-| POST   | `/resetPass` | Reset password post-OTP      |
+| GET    | `/google`    | Start Google OAuth with Gmail readonly scope |
+| GET    | `/google/callback` | Complete Google OAuth and issue JWT cookie |
 | GET    | `/checkAuth` | Validate session cookie      |
 
 ### Expenses (`/api/expense`)
@@ -156,19 +177,16 @@ Visit `http://localhost:3000` once all services are up. The frontend talks to th
 | DELETE | `/api/profile/account`     | Delete account and related data      |
 | POST   | `/api/profile/data`        | Trigger 60-day sync from FastAPI     |
 
-### FastAPI service (`http://localhost:8000`)
+### FastAPI service (`http://localhost:5000`)
 | Method | Path                    | Description                                       |
 |--------|-------------------------|---------------------------------------------------|
 | POST   | `/expense`              | Return parsed transactions for an email/date      |
 | POST   | `/chat`                 | LLM chatbot response for expense questions        |
 | POST   | `/updateData`           | Persist formatted transactions to `data_array.json`|
-| POST   | `/updateFormattedData`* | Updates LLM cache with nickname-enriched data     |
-
-`*`Called internally by the Express API; exposed for completeness.
 
 ## Data & LLM Flow
-- `profile/data` fetches ~60 days of history from `/expense`, upserts into `onlineTransaction`, then rebuilds the chatbot payload.
-- Manual additions from the frontend hit `/api/expense/add`, writing to `manualTransaction`.
+- `profile/data` fetches ~60 days of Gmail transaction alerts from `/expense`, upserts them as email transactions, then rebuilds the chatbot payload.
+- Manual additions from the frontend hit `/api/expense/add`, writing manual transactions.
 - Nickname updates rebuild the agent payload via `buildAgentJson` and POST to `/updateFormattedData`, keeping the LLM context in sync.
 - Chat queries route through the LangGraph pipeline (`llm/chat.py`) which:
   1. Classifies intent with the Hugging Face model.
