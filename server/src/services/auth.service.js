@@ -1,6 +1,7 @@
 import prisma from "../lib/prisma.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import { encrypt } from "../utils/encryption.js";
 
 dotenv.config();
 
@@ -42,7 +43,9 @@ export const findOrCreateGoogleUser = async ({
         email,
         googleId,
         picture,
-        googleRefreshToken: refreshToken,
+        googleRefreshToken: refreshToken
+          ? encrypt(refreshToken)
+          : null,
       },
     });
   } else {
@@ -52,7 +55,9 @@ export const findOrCreateGoogleUser = async ({
         googleId,
         picture,
         ...(refreshToken && {
-          googleRefreshToken: refreshToken,
+          googleRefreshToken: refreshToken
+            ? encrypt(refreshToken)
+            : null,
         }),
       },
     });
