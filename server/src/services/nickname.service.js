@@ -1,18 +1,10 @@
 import prisma from "../lib/prisma.js";
 import { buildAgentContext } from "./agent-context.service.js";
 
-export const getUserNicknamesMap = async (email) => {
-  const user = await prisma.user.findUnique({
-    where: { email },
-  });
-
-  if (!user) {
-    return {};
-  }
-
+export const getUserNicknamesMap = async (userId) => {
   const nicknamesArray = await prisma.nickname.findMany({
     where: {
-      userId: user.id,
+      userId,
     },
   });
 
@@ -22,21 +14,17 @@ export const getUserNicknamesMap = async (email) => {
   }, {});
 };
 
-export const upsertOrDeleteNickname = async (email, upiId, nickname) => {
-  const user = await prisma.user.findUnique({
-    where: { email },
-  });
-
-  if (!user) {
-    throw new Error("User not found");
-  }
-
+export const upsertOrDeleteNickname = async (
+  userId,
+  upiId,
+  nickname
+) => {
   let updatedNickname = null;
 
   if (!nickname || nickname.trim() === "") {
     await prisma.nickname.deleteMany({
       where: {
-        userId: user.id,
+        userId,
         upiId,
       },
     });
@@ -44,7 +32,7 @@ export const upsertOrDeleteNickname = async (email, upiId, nickname) => {
     updatedNickname = await prisma.nickname.upsert({
       where: {
         userId_upiId: {
-          userId: user.id,
+          userId,
           upiId,
         },
       },
@@ -52,15 +40,15 @@ export const upsertOrDeleteNickname = async (email, upiId, nickname) => {
         nickname,
       },
       create: {
-        userId: user.id,
+        userId,
         upiId,
         nickname,
       },
     });
   }
 
-  // Keep your existing LLM sync
-  const formatted = await buildAgentContext(email);
+  // Keep LLM context in sync
+  const formatted = await buildAgentContext(userId);
 
   await fetch("http://localhost:8000/updateFormattedData", {
     method: "POST",

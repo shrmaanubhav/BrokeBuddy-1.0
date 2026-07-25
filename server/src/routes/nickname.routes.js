@@ -1,4 +1,5 @@
 import express from "express";
+import { protectRoute } from "../middleware/auth.middleware.js";
 import {
   getNicknames,
   saveNickname,
@@ -6,7 +7,9 @@ import {
 
 const router = express.Router();
 
-router.post("/get", getNicknames);
-router.post("/save", saveNickname);
+router.use(protectRoute);
+
+router.get("/", getNicknames);
+router.post("/", saveNickname);
 
 export default router;
