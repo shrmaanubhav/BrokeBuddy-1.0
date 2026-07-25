@@ -2,7 +2,6 @@ import crypto from "crypto";
 
 const ALGORITHM = "aes-256-gcm";
 const KEY = Buffer.from(process.env.TOKEN_ENCRYPTION_KEY, "hex");
-console.log("KEY:", process.env.TOKEN_ENCRYPTION_KEY);
 if (KEY.length !== 32) {
   throw new Error(
     "TOKEN_ENCRYPTION_KEY must be a 64-character hex string."
