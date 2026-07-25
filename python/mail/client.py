@@ -36,31 +36,45 @@ class GmailClient:
     def list_messages(
         self,
         user_id: str,
+        days: int = 7,
         query: str | None = None,
         max_results: int = 100,
+        page_token: str | None = None,
     ):
         """
-        Lists Gmail message IDs matching an optional query.
+        Lists Gmail messages.
+
+        By default, fetches emails from the last `days` days.
+        A custom Gmail search query can also be provided.
         """
+
+        if query is None:
+            query = f"newer_than:{days}d"
+
         service = self.get_service(user_id)
 
-        response = (
+        return (
             service.users()
             .messages()
             .list(
                 userId="me",
                 q=query,
                 maxResults=max_results,
+                pageToken=page_token,
             )
             .execute()
         )
 
-        return response.get("messages", [])
-
-    def get_message(self, user_id: str, message_id: str, fmt: str = "full"):
+    def get_message(
+        self,
+        user_id: str,
+        message_id: str,
+        fmt: str = "full",
+    ):
         """
         Returns a Gmail message.
-        fmt can be:
+
+        Supported formats:
         - full
         - metadata
         - minimal

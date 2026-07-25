@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Request
-
-from email_parser import FindCostFromGivenDate
+from mail.service import get_transactions
 
 router = APIRouter()
 
@@ -11,7 +10,7 @@ async def parse_email(req: Request):
 
     print("Raw JSON received:", data["email"])
 
-    return FindCostFromGivenDate(
-        data["email"],
-        data["date"],
+    return get_transactions(
+        recipient=data["email"],
+        start_date=data["date"],
     )
