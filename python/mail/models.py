@@ -21,3 +21,15 @@ class Transaction:
 
     subject: Optional[str] = None
     sender: Optional[str] = None
+
+    @property
+    def debited(self) -> bool:
+        return self.transaction_type == "debit"
+
+    @property
+    def date(self) -> Optional[str]:
+        return self.transaction_date
+
+    @property
+    def transaction_id(self) -> Optional[str]:
+        return self.upi_reference

@@ -1,5 +1,5 @@
-from python.assistant.agents.budget_agent import Budget
-from python.assistant.agents.expense_agent import ExpenseAgent
+from assistant.agents.budget_agent import Budget
+from assistant.agents.expense_agent import ExpenseAgent
 from assistant.graph import build_graph
 from assistant.prompts import build_response_chains
 from assistant.state import default_state
