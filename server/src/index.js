@@ -8,7 +8,7 @@ import prisma from "./lib/prisma.js";
 
 import authRoutes from "./routes/auth.routes.js";
 import transactionRoutes from "./routes/transaction.routes.js";
-import legacyExpenseRoutes from "./routes/legacy-expense.routes.js";
+// import legacyExpenseRoutes from "./routes/legacy-expense.routes.js";
 import nicknameRoutes from "./routes/nickname.routes.js";
 import profileRoutes from "./routes/profile.routes.js";
 
@@ -55,7 +55,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/transactions", transactionRoutes);
-app.use("/api/expense", legacyExpenseRoutes);
+// app.use("/api/expense", legacyExpenseRoutes);
 app.use("/api/nicknames", nicknameRoutes);
 app.use("/api/profile", profileRoutes);
 

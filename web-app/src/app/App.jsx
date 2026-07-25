@@ -1,11 +1,11 @@
-import { HashRouter as Router } from "react-router-dom";
+import { BrowserRouter as Router } from "react-router-dom";
 
 import useAuth from "../hooks/useAuth";
 import AppRoutes from "./AppRoutes";
 import AppToaster from "./AppToaster";
 
 function App() {
-  const { loading, isAuthenticated, setIsAuthenticated } = useAuth();
+  const { loading, isAuthenticated, user, setIsAuthenticated } = useAuth();
 
   if (loading) {
     return (
@@ -21,6 +21,7 @@ function App() {
 
       <AppRoutes
         isAuthenticated={isAuthenticated}
+        user={user}
         setIsAuthenticated={setIsAuthenticated}
       />
     </Router>
