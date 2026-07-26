@@ -1,8 +1,20 @@
 import prisma from "../lib/prisma.js";
 import { TransactionSource } from "@prisma/client";
-import { buildAgentContext } from "./agent-context.service.js";
 
-export const syncUserData = async (userId, email) => {
+import * as parserService from "./parser.service.js";
+
+export const syncUserData = async (userId) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      email: true,
+    },
+  });
+
+  if (!user) {
+    throw new Error("USER_NOT_FOUND");
+  }
+
   // Calculate date 60 days ago
   const date = new Date();
   date.setDate(date.getDate() - 60);
@@ -13,57 +25,37 @@ export const syncUserData = async (userId, email) => {
 
   const date_2mon = `${day}-${month}-${year}`;
 
-  // Fetch transactions from Python backend
-  const resp = await fetch("http://localhost:5000/expense", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      userId,
-      email,
-      date: date_2mon,
-    }),
+  // Parse Gmail transactions using Python service
+  const transactions = await parserService.parseExpenses({
+    userId,
+    email: user.email,
+    date: date_2mon,
   });
 
-  if (!resp.ok) {
-    throw new Error("FAILED_TO_FETCH_TRANSACTIONS");
-  }
+  const formattedTransactions = transactions.map((txn) => ({
+    userId,
+    source: TransactionSource.EMAIL,
+    amount: Number(txn.COST),
+    debited: txn.DEBITED,
+    transactionDate: new Date(txn.date),
+    upiId: txn.UPI_ID?.trim().toLowerCase() || null,
+    merchant: txn.nicknameId?.trim() || null,
+  }));
 
-  const data = await resp.json();
+  let inserted = 0;
 
-  const transactions = data.Transactions || [];
-
-  if (transactions.length > 0) {
-    await prisma.transaction.createMany({
-      data: transactions.map((txn) => ({
-        userId,
-
-        source: TransactionSource.EMAIL,
-
-        amount: Number(txn.COST),
-
-        debited: txn.DEBITED,
-
-        transactionDate: new Date(txn.date),
-
-        upiId: txn.UPI_ID?.trim().toLowerCase() || null,
-
-        merchant: txn.nicknameId?.trim() || null,
-      })),
+  if (formattedTransactions.length > 0) {
+    const result = await prisma.transaction.createMany({
+      data: formattedTransactions,
       skipDuplicates: true,
     });
+
+    inserted = result.count ?? 0;
   }
 
-  const formatted = await buildAgentContext(userId);
-
-  await fetch("http://localhost:5000/updateData", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      transactions: formatted,
-    }),
-  });
+  return {
+    inserted,
+    skipped: formattedTransactions.length - inserted,
+    total: formattedTransactions.length,
+  };
 };

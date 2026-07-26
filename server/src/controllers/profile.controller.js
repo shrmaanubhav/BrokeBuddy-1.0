@@ -87,13 +87,11 @@ export const deleteAccount = async (req, res) => {
 
 export const syncTransactions = async (req, res) => {
   try {
-    await transactionSyncService.syncUserData(
-      req.user.id,
-      req.user.email
-    );
+    const result = await transactionSyncService.syncUserData(req.user.id);
 
     return res.status(200).json({
       msg: "Transactions synced successfully.",
+      ...result,
     });
   } catch (error) {
     console.error("Transaction sync error:", error);

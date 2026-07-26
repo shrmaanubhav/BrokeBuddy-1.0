@@ -1,5 +1,6 @@
 import prisma from "../lib/prisma.js";
 import { buildAgentContext } from "./agent-context.service.js";
+import * as parserService from "./parser.service.js";
 
 export const getUserNicknamesMap = async (userId) => {
   const nicknamesArray = await prisma.nickname.findMany({
@@ -50,13 +51,7 @@ export const upsertOrDeleteNickname = async (
   // Keep LLM context in sync
   const formatted = await buildAgentContext(userId);
 
-  await fetch("http://localhost:8000/updateFormattedData", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(formatted),
-  });
+  await parserService.updateAgentData(formatted);
 
   return updatedNickname;
 };

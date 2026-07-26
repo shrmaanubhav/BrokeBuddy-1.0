@@ -1,17 +1,21 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter
+from pydantic import BaseModel
+
 from mail.service import get_transactions
 
 router = APIRouter()
 
 
+class ExpenseRequest(BaseModel):
+    userId: str
+    email: str
+    date: str
+
+
 @router.post("/expense")
-async def parse_email(req: Request):
-    data = await req.json()
-
-    print("Raw JSON received:", data["email"])
-
+async def parse_email(req: ExpenseRequest):
     return get_transactions(
-        user_id=data.get("userId", data["email"]),
-        recipient=data["email"],
-        start_date=data["date"],
+        user_id=req.userId,
+        recipient=req.email,
+        start_date=req.date,
     )

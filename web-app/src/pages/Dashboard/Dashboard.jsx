@@ -61,8 +61,10 @@ const Dashboard = ({ setIsAuthenticated }) => {
     const toastId = toast.loading("Syncing transactions...");
 
     try {
-      await api.post("/profile/data");
-      toast.success("Transactions synced successfully!"); 
+      const res = await api.post("/profile/sync-transactions");
+      toast.success(
+        res.data.msg || "Transactions synced successfully!"
+      );
     } catch (error) {
       console.error("Failed to sync transactions", error);
       toast.error("Failed to sync transactions");
