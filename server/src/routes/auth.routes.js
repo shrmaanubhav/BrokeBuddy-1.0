@@ -61,4 +61,6 @@ router.get("/checkAuth", protectRoute, async (req, res) => {
   }
 });
 
+router.post("/logout", logout);
+
 export default router;
