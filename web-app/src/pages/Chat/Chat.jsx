@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import api from "../../lib/api"
 import "./Chat.css"; 
 
 export default function ChatBot() {
@@ -21,36 +22,43 @@ export default function ChatBot() {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!inputValue.trim()) return;
+    const query = inputValue.trim();
+
+    if (!query) return;
 
     const userMessage = {
       id: Date.now(),
-      text: inputValue,
+      text: query,
       sender: "user",
     };
     setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
     setIsTyping(true);
     try {
-      const resp = await fetch('http://localhost:5000/chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ query: inputValue }),
-    })
-    const data = await resp.json();
-    const chatResp= data.response
-    console.log("Response from backend:", chatResp);
-    const botResponse = {
-      id: Date.now() + 1,
-      text: chatResp,
-      sender: "bot",
-    };
+      const { data } = await api.post("/chat", {
+        query,
+      });
+      const chatResp =
+        data?.response ?? "Sorry, I couldn't generate a response.";
+      console.log("Response from backend:", chatResp);
+      const botResponse = {
+        id: Date.now() + 1,
+        text: chatResp,
+        sender: "bot",
+      };
 
     setMessages((prev) => [...prev, botResponse]);
     } catch (error) {
       console.error("Error talking to backend:", error);
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          text: "Sorry, something went wrong.",
+          sender: "bot",
+        },
+      ]);
     }
     finally{
       setIsTyping(false);
