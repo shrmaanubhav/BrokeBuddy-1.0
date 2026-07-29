@@ -30,7 +30,7 @@ BrokeBuddy-1.0/
 
 ## Features
 - **Expense dashboard** – recent transactions, nickname editor, cached search, modal-driven manual entry, and CSV-style layout.
-- **Profile management** – update display name, change password, delete account, and trigger a two-month historical sync.
+- **Profile management** – update display name, delete account, and trigger a two-month historical sync.
 - **FineTuned DistillBert for intent Classification** – Used a sample of 400 prompts for classification training.
 - **Chatbot assistant** – LLM answers spend questions, extracts merchants/date ranges, and can log new expenses conversationally.
 - **Budget agent** – Uses `llm/budgets.json`, compares against actual expenses, and surfaces top related transactions to keep answers grounded.
@@ -59,24 +59,20 @@ Create `server/.env`:
 | `GOOGLE_CALLBACK_URL` | Google callback URL, for example `http://localhost:4000/api/auth/google/callback` |
 | `FRONTEND_URL` | Frontend URL, for example `http://127.0.0.1:3000/BrokeBuddy` |
 | `TOKEN_ENCRYPTION_KEY` | 64-character hex key for encrypting Gmail refresh tokens |
+| `PYTHON_API_URL` | URL of the Python FastAPI service, for example `http://localhost:5000` |
 
 Create `python/.env`:
 
 | Variable | Description |
 |----------|-------------|
-| `GROQ_API_KEY` | Groq API key used by LangChain clients |
+| `API_KEY` | Groq API key used by ChatGroq |
 | `DATABASE_URL` | Database URL used by the Python Gmail token lookup |
 | `GOOGLE_CLIENT_ID` | Google OAuth client id |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
 | `TOKEN_ENCRYPTION_KEY` | Same 64-character hex key used by the server |
+| `GMAIL_EMAIL` | Gmail account email address used to fetch transaction emails |
+| `GMAIL_APP_PASSWORD` | Gmail app password used by the parser |
 | `TRANSACTION_SENDER_EMAIL` | Gmail sender filter for transaction alerts. Defaults to `kblalerts@kbl.bank.in` |
-
-Create `web-app/.env` for the admin login:
-
-| Variable  | Description                            |
-|-----------|----------------------------------------|
-| `REACT_APP_ADMIN_EMAIL` | Admin's email for login |
-| `REACT_APP_ADMIN_PASSWORD` | Admin's password for the app |
 
 Never commit these files to version control.
 
@@ -173,9 +169,8 @@ TRANSACTION_SENDER_EMAIL="alerts@example.com"
 | POST   | `/api/nicknames/save`      | Upsert nickname for a UPI ID         |
 | GET    | `/api/profile/me`          | Fetch authenticated profile          |
 | POST   | `/api/profile/name`        | Update display name                  |
-| POST   | `/api/profile/password`    | Change password                      |
 | DELETE | `/api/profile/account`     | Delete account and related data      |
-| POST   | `/api/profile/data`        | Trigger 60-day sync from FastAPI     |
+| POST   | `/api/profile/sync-transactions` | Trigger 60-day sync from FastAPI |
 
 ### FastAPI service (`http://localhost:5000`)
 | Method | Path                    | Description                                       |
@@ -185,7 +180,7 @@ TRANSACTION_SENDER_EMAIL="alerts@example.com"
 | POST   | `/updateData`           | Persist formatted transactions to `data_array.json`|
 
 ## Data & LLM Flow
-- `profile/data` fetches ~60 days of Gmail transaction alerts from `/expense`, upserts them as email transactions, then rebuilds the chatbot payload.
+- `/api/profile/sync-transactions` fetches ~60 days of Gmail transaction alerts from `/expense`, upserts them as email transactions, then rebuilds the chatbot payload.
 - Manual additions from the frontend hit `/api/expense/add`, writing manual transactions.
 - Nickname updates rebuild the agent payload via `buildAgentJson` and POST to `/updateFormattedData`, keeping the LLM context in sync.
 - Chat queries route through the LangGraph pipeline (`llm/chat.py`) which:
