@@ -1,59 +1,14 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import api from "../../lib/api";
-import "../Expenses/Expenses.css";
+import "./Dashboard.css";
+import ProfileDropdown from "../Profile/ProfileDropdown";
 import toast from "react-hot-toast";
 
 const Dashboard = ({ setIsAuthenticated }) => {
   const navigate = useNavigate();
-  const [name, setName] = useState("");
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
 
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        const res = await api.get("/profile/me");
-        setName(res.data?.name || "");
-      } catch (error) {
-        console.error("Failed to fetch user profile:", error);
-      }
-    };
-
-    fetchUserProfile();
-  }, []);
-
-  const clearCache = () => {
-    localStorage.removeItem("transactions_cache");
-    localStorage.removeItem("transactions_time");
-    console.log("✅ Cache cleared on logout");
-  };
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (isProfileOpen && !event.target.closest(".profile-section")) {
-        setIsProfileOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isProfileOpen]);
-
-  const handleLogout = async () => {
-    try {
-      const res = await api.post("/auth/logout");
-      toast.success(res.data.msg || "Logged out");
-      clearCache();
-      setIsAuthenticated(false);
-      navigate("/");
-    } catch (err) {
-      console.error(err.response?.data?.msg || err.message);
-      toast.error("Logout failed");
-    }
-  };
 
   const handleSyncTransactions = async (e) => {
     e.preventDefault();
@@ -80,32 +35,6 @@ const Dashboard = ({ setIsAuthenticated }) => {
     window.dispatchEvent(event);
   };
 
-  const handleDeleteAccount = async (e) => {
-    e.preventDefault();
-
-    if (
-      !window.confirm(
-        "Do you want to delete your account? This action cannot be undone."
-      )
-    ) {
-      return;
-    }
-
-    try {
-      await api.delete("/profile/account");
-      toast.success("Account deleted successfully.");
-      localStorage.clear();
-      if (setIsAuthenticated) {
-        setIsAuthenticated(false);
-      }
-      navigate("/");
-    } catch (err) {
-      console.error("Delete Account Error:", err.response?.data?.msg || err.message);
-      toast.error(
-        err.response?.data?.msg || err.message || "Failed to delete account"
-      );
-    }
-  };
 
   return (
     <div>
@@ -133,39 +62,7 @@ const Dashboard = ({ setIsAuthenticated }) => {
               </Link>
 
               {/* --- Profile Section --- */}
-              <div className="profile-section">
-                <button
-                  className="profile-button"
-                  onClick={() => setIsProfileOpen(!isProfileOpen)}
-                >
-                  {name ? name.substring(0, 1).toUpperCase() : "?"}
-                </button>
-
-                {isProfileOpen && (
-                  <div className="profile-dropdown">
-                    <div className="dropdown-header">
-                      Signed in as <br />
-                      <strong>{name || "Not logged in"}</strong>
-                    </div>
-                    <ul className="dropdown-menu">
-                      <li>
-                        <button onClick={handleLogout}>Logout</button>
-                      </li>
-                      <li>
-                        <hr />
-                      </li>
-                      <li>
-                        <button
-                          onClick={handleDeleteAccount}
-                          className="delete-link"
-                        >
-                          Delete Account
-                        </button>
-                      </li>
-                    </ul>
-                  </div>
-                )}
-              </div>
+              <ProfileDropdown setIsAuthenticated={setIsAuthenticated} />
             </div>
           </div>
         </div>
