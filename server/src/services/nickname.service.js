@@ -1,6 +1,4 @@
 import prisma from "../lib/prisma.js";
-import { buildAgentContext } from "./agent-context.service.js";
-import * as parserService from "./parser.service.js";
 
 export const getUserNicknamesMap = async (userId) => {
   const nicknamesArray = await prisma.nickname.findMany({
@@ -20,8 +18,6 @@ export const upsertOrDeleteNickname = async (
   upiId,
   nickname
 ) => {
-  let updatedNickname = null;
-
   if (!nickname || nickname.trim() === "") {
     await prisma.nickname.deleteMany({
       where: {
@@ -29,29 +25,24 @@ export const upsertOrDeleteNickname = async (
         upiId,
       },
     });
-  } else {
-    updatedNickname = await prisma.nickname.upsert({
-      where: {
-        userId_upiId: {
-          userId,
-          upiId,
-        },
-      },
-      update: {
-        nickname,
-      },
-      create: {
-        userId,
-        upiId,
-        nickname,
-      },
-    });
+
+    return null;
   }
 
-  // Keep LLM context in sync
-  const formatted = await buildAgentContext(userId);
-
-  await parserService.updateAgentData(formatted);
-
-  return updatedNickname;
+  return await prisma.nickname.upsert({
+    where: {
+      userId_upiId: {
+        userId,
+        upiId,
+      },
+    },
+    update: {
+      nickname,
+    },
+    create: {
+      userId,
+      upiId,
+      nickname,
+    },
+  });
 };

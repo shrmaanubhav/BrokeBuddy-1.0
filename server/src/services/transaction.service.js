@@ -60,6 +60,24 @@ export const searchTransactions = async (
   }
 
   if (query) {
+    // Find nicknames matching the search query
+    const nicknameMatches = await prisma.nickname.findMany({
+      where: {
+        userId,
+        nickname: {
+          contains: query,
+          mode: "insensitive",
+        },
+      },
+      select: {
+        upiId: true,
+      },
+    });
+
+    const matchingUpiIds = nicknameMatches.map(
+      (item) => item.upiId
+    );
+
     where.OR = [
       {
         merchant: {
@@ -79,6 +97,15 @@ export const searchTransactions = async (
           mode: "insensitive",
         },
       },
+      ...(matchingUpiIds.length
+        ? [
+            {
+              upiId: {
+                in: matchingUpiIds,
+              },
+            },
+          ]
+        : []),
     ];
   }
 
