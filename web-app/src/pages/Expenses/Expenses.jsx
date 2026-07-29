@@ -275,6 +275,7 @@ const ExpensesPage = () => {
 
   const handleAddSubmit = async (e) => {
     e.preventDefault();
+
     if (
       !newExpenseData.nicknameOrUpiId ||
       !newExpenseData.amount ||
@@ -283,25 +284,25 @@ const ExpensesPage = () => {
       toast.error("Please fill in all required fields.");
       return;
     }
+
     const input = newExpenseData.nicknameOrUpiId.trim();
 
-    // Default: assume the user entered a UPI ID
-    let resolvedUpiId = input;
-
-    // Check if the user actually entered a nickname
+    // Check whether the entered text is an existing nickname
     const nicknameMatch = Object.entries(nicknames).find(
       ([, nickname]) => nickname.toLowerCase() === input.toLowerCase()
     );
-
-    if (nicknameMatch) {
-      resolvedUpiId = nicknameMatch[0]; // The corresponding UPI ID
-    }
 
     setIsLoading(true);
     setError(null);
 
     const payload = {
-      upiId: resolvedUpiId || null,
+      // Always preserve the entered name as the merchant
+      merchant: input,
+
+      // If the name already exists as a nickname, associate its UPI ID.
+      // Otherwise this is a brand-new manual transaction.
+      upiId: nicknameMatch ? nicknameMatch[0] : null,
+
       amount: Number(newExpenseData.amount),
       debited: newExpenseData.debited,
       transactionDate: newExpenseData.date,
@@ -663,8 +664,37 @@ const ExpensesPage = () => {
                 return (
                   <>
                     {transactionsToShow.map((expense, index) => {
-                      const nickname = nicknames[expense.upiId];
+                      const merchant = expense.merchant;
+                      const upi = expense.upiId;
+                      const nickname = upi ? nicknames[upi] : null;
                       const isEditing = editingIndex === index;
+
+                      // Determine display lines and whether editing is allowed
+                      let titleLine = "";
+                      let subtitleLine = null;
+                      const editingAllowed = Boolean(upi);
+
+                      if (merchant && upi) {
+                        // Case A: merchant exists AND upiId exists
+                        titleLine = merchant;
+                        subtitleLine = upi;
+                      } else if (merchant && !upi) {
+                        // Case B: merchant exists AND upiId is null
+                        titleLine = merchant;
+                        subtitleLine = null;
+                      } else if (!merchant && nickname && upi) {
+                        // Case C: merchant is null AND nickname exists
+                        titleLine = nickname;
+                        subtitleLine = upi;
+                      } else if (!merchant && !nickname && upi) {
+                        // Case D: neither merchant nor nickname exists (but upi exists)
+                        titleLine = "Add a nickname...";
+                        subtitleLine = upi;
+                      } else {
+                        // Fallback: neither merchant nor upi present
+                        titleLine = "Add a nickname...";
+                        subtitleLine = null;
+                      }
 
                       const formattedDate = new Date(
                         expense.transactionDate
@@ -709,12 +739,30 @@ const ExpensesPage = () => {
                                     className="expense-meta"
                                     style={{ wordBreak: "break-all" }}
                                   >
-                                    {expense.upiId || expense.merchant || "Unknown"}
+                                    {subtitleLine || "Unknown"}
                                   </p>
                                 </div>
                               ) : (
                                 <div>
-                                  {nickname ? (
+                                  {/**
+                                   * Render titleLine as either a clickable placeholder
+                                   * or a static title. Only allow editing when a UPI ID
+                                   * exists (editingAllowed).
+                                   */}
+                                  {titleLine === "Add a nickname..." ? (
+                                    editingAllowed ? (
+                                      <div
+                                        className="nickname-placeholder"
+                                        onClick={() => handleStartEditing(index, "")}
+                                      >
+                                        {titleLine}
+                                      </div>
+                                    ) : (
+                                      <div className="nickname-placeholder" style={{ opacity: 0.6 }}>
+                                        {titleLine}
+                                      </div>
+                                    )
+                                  ) : (
                                     <div
                                       style={{
                                         display: "flex",
@@ -722,33 +770,28 @@ const ExpensesPage = () => {
                                         gap: "8px",
                                       }}
                                     >
-                                      <h4 style={{ margin: 0 }}>{nickname}</h4>
-                                      <button
-                                        onClick={() =>
-                                          handleStartEditing(index, nickname)
-                                        }
-                                        className="edit-nickname-btn"
-                                        title="Edit nickname"
-                                      >
-                                        ✏️
-                                      </button>
-                                    </div>
-                                  ) : (
-                                    <div
-                                      className="nickname-placeholder"
-                                      onClick={() =>
-                                        handleStartEditing(index, "")
-                                      }
-                                    >
-                                      Add a nickname...
+                                      <h4 style={{ margin: 0 }}>{titleLine}</h4>
+                                      {editingAllowed && (
+                                        <button
+                                          onClick={() =>
+                                            handleStartEditing(index, titleLine)
+                                          }
+                                          className="edit-nickname-btn"
+                                          title="Edit nickname"
+                                        >
+                                          ✏️
+                                        </button>
+                                      )}
                                     </div>
                                   )}
-                                  <p
-                                    className="expense-meta"
-                                    style={{ wordBreak: "break-all" }}
-                                  >
-                                    {expense.upiId || expense.merchant || "Unknown"}
-                                  </p>
+                                  {subtitleLine && (
+                                    <p
+                                      className="expense-meta"
+                                      style={{ wordBreak: "break-all" }}
+                                    >
+                                      {subtitleLine}
+                                    </p>
+                                  )}
                                 </div>
                               )}
                               <div className="expense-meta">
