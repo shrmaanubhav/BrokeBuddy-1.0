@@ -23,6 +23,11 @@ const saveCache = (transactions) => {
   localStorage.setItem(CACHE_TIME_KEY, Date.now());
 };
 
+const invalidateCache = () => {
+  localStorage.removeItem(CACHE_KEY);
+  localStorage.removeItem(CACHE_TIME_KEY);
+};
+
 const ExpensesPage = () => {
   const [cachedTransactions, setCachedTransactions] = useState([]);
 
@@ -79,6 +84,18 @@ const ExpensesPage = () => {
     }
   }, []);
 
+  useEffect(() => {
+    const handleTransactionsRefreshed = () => {
+      invalidateCache();
+      fetchRecentData();
+    };
+
+    window.addEventListener("transactionsRefreshed", handleTransactionsRefreshed);
+    return () => {
+      window.removeEventListener("transactionsRefreshed", handleTransactionsRefreshed);
+    };
+  }, []);
+
   const fetchRecentData = async () => {
     setIsLoading(true);
     setError(null);
@@ -104,6 +121,11 @@ const ExpensesPage = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const refreshTransactions = async () => {
+    invalidateCache();
+    await fetchRecentData();
   };
 
   const handleSearch = async (e) => {
@@ -196,13 +218,9 @@ const ExpensesPage = () => {
     setSearchStartDate("");
     setSearchEndDate("");
     setSearchQuery("");
-    const cached = loadCache();
-    if (cached) {
-      setExpenses(cached);
-      setIsSearchActive(false);
-    } else {
-      fetchRecentData();
-    }
+    setIsSearchActive(false);
+    invalidateCache();
+    fetchRecentData();
   };
 
   const handleStartEditing = (index, currentNickname) => {
@@ -303,7 +321,7 @@ const ExpensesPage = () => {
         date: "",
       });
 
-      fetchRecentData();
+      refreshTransactions();
     } catch (err) {
       console.error("Failed to add transaction:", err);
 
@@ -333,7 +351,7 @@ const ExpensesPage = () => {
       await api.delete(`/transactions/${id}`);
 
       toast.success("Transaction deleted successfully");
-      fetchRecentData();
+      refreshTransactions();
     } catch (err) {
       console.error("Failed to delete transaction:", err);
       setError(

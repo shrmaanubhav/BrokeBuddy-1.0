@@ -24,7 +24,7 @@ const Dashboard = ({ setIsAuthenticated }) => {
   }, []);
 
   const clearCache = () => {
-    localStorage.removeItem("cachedTransactions");
+    localStorage.removeItem("transactions_cache");
     localStorage.removeItem("transactions_time");
     console.log("✅ Cache cleared on logout");
   };
@@ -65,6 +65,7 @@ const Dashboard = ({ setIsAuthenticated }) => {
       toast.success(
         res.data.msg || "Transactions synced successfully!"
       );
+      notifyTransactionsRefreshed();
     } catch (error) {
       console.error("Failed to sync transactions", error);
       toast.error("Failed to sync transactions");
@@ -72,6 +73,11 @@ const Dashboard = ({ setIsAuthenticated }) => {
       setIsFetching(false);
       toast.dismiss(toastId);
     }
+  };
+
+  const notifyTransactionsRefreshed = () => {
+    const event = new Event("transactionsRefreshed");
+    window.dispatchEvent(event);
   };
 
   const handleDeleteAccount = async (e) => {
@@ -219,7 +225,7 @@ const Dashboard = ({ setIsAuthenticated }) => {
       >
         <div className="container">
           <p style={{ color: "#666" }}>
-            © 2025 InboxSpend. Powered by AI for smarter financial decisions.
+            © 2025 BrokeBuddy. Powered by AI for smarter financial decisions.
           </p>
         </div>
       </footer>
