@@ -2,6 +2,10 @@
 
 Full-stack personal finance assistant that combines a React dashboard, an Express API, a Prisma-backed database, and a FastAPI + LangGraph service for expense analytics and conversational insights.
 
+
+## Video Demo
+https://drive.google.com/file/d/1o93DdkPTtgBXnVGRwTtNTuHS7Dn4QlqZ/view?usp=sharing
+
 ## Overview
 - Track online and manual UPI transactions with search, caching, and nickname support for frequent payees.
 - Google OAuth login with JWT session cookies, profile management, and account deletion.
@@ -9,8 +13,6 @@ Full-stack personal finance assistant that combines a React dashboard, an Expres
 - ChatBot using underlying agents to help users talk to their expenses and budgets.
 - FastAPI layer wraps Groq-hosted LLMs to power the chatbot, natural-language querying, merchant/date extraction, and budget checks grounded on real transactions.
 
-## Video Demo
-https://drive.google.com/file/d/1o93DdkPTtgBXnVGRwTtNTuHS7Dn4QlqZ/view?usp=sharing
 
 ## Architecture
 ```
