@@ -10,6 +10,7 @@ class ExpenseRequest(BaseModel):
     userId: str
     email: str
     date: str
+    bankSenderEmail: str
 
 
 @router.post("/expense")
@@ -18,4 +19,5 @@ async def parse_email(req: ExpenseRequest):
         user_id=req.userId,
         recipient=req.email,
         start_date=req.date,
+        sender=req.bankSenderEmail,
     )

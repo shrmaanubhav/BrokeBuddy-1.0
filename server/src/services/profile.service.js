@@ -8,6 +8,8 @@ export const getUserProfile = async (userId) => {
       name: true,
       email: true,
       picture: true,
+      bankSenderEmail: true,
+      bankSenderVerified: true,
       createdAt: true,
       updatedAt: true,
     },

@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from .client import GmailClient
 from .parser import parse_email
 from .aggregator import TransactionAggregator
-from .settings import TRANSACTION_SENDER_EMAIL
 
 
 def _gmail_date(value: str) -> str:
@@ -15,6 +14,7 @@ def get_transactions(
     user_id: str,
     recipient: str,
     start_date: str,
+    sender: str,
     end_date: str | None = None,
 ):
     if end_date is None:
@@ -27,7 +27,7 @@ def get_transactions(
     page_token = None
 
     query = (
-        f"from:{TRANSACTION_SENDER_EMAIL} "
+        f"from:{sender} "
         f"to:{recipient} "
         f"after:{_gmail_date(start_date)} "
         f"before:{_gmail_date(end_date)}"

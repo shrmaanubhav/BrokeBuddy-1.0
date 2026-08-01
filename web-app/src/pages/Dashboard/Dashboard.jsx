@@ -3,12 +3,16 @@ import { useState, useEffect } from "react";
 import api from "../../lib/api";
 import "../Expenses/Expenses.css";
 import toast from "react-hot-toast";
+import BankEmailModal from "../../components/BankEmailModal";
 
 const Dashboard = ({ setIsAuthenticated }) => {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isFetching, setIsFetching] = useState(false);
+  const [bankSenderEmail, setBankSenderEmail] = useState("");
+  const [bankSenderVerified, setBankSenderVerified] = useState(false);
+  const [isBankEmailModalOpen, setIsBankEmailModalOpen] = useState(false);
+  const [isSavingBankEmail, setIsSavingBankEmail] = useState(false);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -55,31 +59,6 @@ const Dashboard = ({ setIsAuthenticated }) => {
     }
   };
 
-  const handleSyncTransactions = async (e) => {
-    e.preventDefault();
-    setIsFetching(true);
-    const toastId = toast.loading("Syncing transactions...");
-
-    try {
-      const res = await api.post("/profile/sync-transactions");
-      toast.success(
-        res.data.msg || "Transactions synced successfully!"
-      );
-      notifyTransactionsRefreshed();
-    } catch (error) {
-      console.error("Failed to sync transactions", error);
-      toast.error("Failed to sync transactions");
-    } finally {
-      setIsFetching(false);
-      toast.dismiss(toastId);
-    }
-  };
-
-  const notifyTransactionsRefreshed = () => {
-    const event = new Event("transactionsRefreshed");
-    window.dispatchEvent(event);
-  };
-
   const handleDeleteAccount = async (e) => {
     e.preventDefault();
 
@@ -107,6 +86,45 @@ const Dashboard = ({ setIsAuthenticated }) => {
     }
   };
 
+  const fetchBankSenderEmail = async () => {
+    try {
+      const response = await api.get("/user/bank-email");
+      setBankSenderEmail(response.data?.bankSenderEmail || "");
+      setBankSenderVerified(response.data?.bankSenderVerified === true);
+      return response.data?.bankSenderEmail || "";
+    } catch (err) {
+      console.error("Failed to load bank sender email:", err);
+      return "";
+    }
+  };
+
+  const handleOpenBankEmailModal = async () => {
+    await fetchBankSenderEmail();
+    setIsBankEmailModalOpen(true);
+  };
+
+  const handleSaveBankEmail = async (email) => {
+    setIsSavingBankEmail(true);
+
+    try {
+      const response = await api.put("/user/bank-email", {
+        bankSenderEmail: email,
+      });
+
+      setBankSenderEmail(response.data?.bankSenderEmail || "");
+      setBankSenderVerified(response.data?.bankSenderVerified === true);
+      toast.success("Bank sender email updated successfully.");
+      setIsBankEmailModalOpen(false);
+    } catch (err) {
+      console.error("Failed to save bank sender email:", err);
+      toast.error(
+        err.response?.data?.msg || err.message || "Failed to save bank sender email"
+      );
+    } finally {
+      setIsSavingBankEmail(false);
+    }
+  };
+
   return (
     <div>
       {/* Navigation */}
@@ -120,14 +138,6 @@ const Dashboard = ({ setIsAuthenticated }) => {
               <Link to="/expenses" className="btn btn-primary nav-link-btn">
                 Expenses
               </Link>
-              <button
-                className="btn btn-primary"
-                style={{ padding: "11px" }}
-                onClick={handleSyncTransactions}
-                disabled={isFetching}
-              >
-                {isFetching ? "Syncing..." : "🔄 Sync Transactions"}
-              </button>
               <Link to="/chatbot" className="btn btn-primary nav-link-btn">
                 🤖 AI Assistant
               </Link>
@@ -152,6 +162,11 @@ const Dashboard = ({ setIsAuthenticated }) => {
                         <button onClick={handleLogout}>Logout</button>
                       </li>
                       <li>
+                        <button onClick={handleOpenBankEmailModal}>
+                          Edit Bank Sender Email
+                        </button>
+                      </li>
+                      <li>
                         <hr />
                       </li>
                       <li>
@@ -170,6 +185,18 @@ const Dashboard = ({ setIsAuthenticated }) => {
           </div>
         </div>
       </nav>
+
+      {isBankEmailModalOpen && (
+        <BankEmailModal
+          isOpen={isBankEmailModalOpen}
+          initialValue={bankSenderEmail}
+          title="Edit Bank Sender Email"
+          placeholder="alerts@hdfcbank.net"
+          onClose={() => setIsBankEmailModalOpen(false)}
+          onSave={handleSaveBankEmail}
+          isSaving={isSavingBankEmail}
+        />
+      )}
 
       {/* Hero Section */}
       <section className="hero">

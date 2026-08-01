@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import "./Expenses.css";
 import toast from "react-hot-toast";
 import api from "../../lib/api";
+import BankEmailModal from "../../components/BankEmailModal";
 
 const CACHE_KEY = "transactions_cache";
 const CACHE_TIME_KEY = "transactions_time";
@@ -50,6 +51,155 @@ const ExpensesPage = () => {
     debited: true,
     date: "",
   });
+  const [bankSenderEmail, setBankSenderEmail] = useState("");
+  const [bankSenderVerified, setBankSenderVerified] = useState(false);
+  const [isBankEmailModalOpen, setIsBankEmailModalOpen] = useState(false);
+  const [pendingSyncAfterSave, setPendingSyncAfterSave] = useState(false);
+  const [isSavingBankEmail, setIsSavingBankEmail] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isNoTransactionsModalOpen, setIsNoTransactionsModalOpen] = useState(false);
+
+  const fetchBankSenderEmail = async () => {
+    try {
+      const response = await api.get("/user/bank-email");
+      const sender = response.data?.bankSenderEmail || "";
+      setBankSenderEmail(sender);
+      setBankSenderVerified(response.data?.bankSenderVerified === true);
+      return sender;
+    } catch (err) {
+      console.error("Failed to fetch bank sender email:", err);
+      return null;
+    }
+  };
+
+  const verifyBankSenderEmail = async () => {
+    try {
+      const response = await api.post("/user/bank-email/verify");
+      setBankSenderVerified(response.data?.bankSenderVerified === true);
+      return response.data?.bankSenderVerified === true;
+    } catch (err) {
+      console.error("Failed to verify bank sender email:", err);
+      toast.error(
+        err.response?.data?.msg || err.message ||
+          "Failed to confirm sender email."
+      );
+      return false;
+    }
+  };
+
+  const notifyTransactionsRefreshed = () => {
+    window.dispatchEvent(new Event("transactionsRefreshed"));
+  };
+
+  const performSync = async () => {
+    setIsSyncing(true);
+    const toastId = toast.loading("Syncing transactions...");
+
+    try {
+      const response = await api.post("/profile/sync-transactions");
+
+      if (response.data?.total === 0) {
+        if (bankSenderVerified) {
+          toast.success("No new transactions found.");
+        } else {
+          setIsNoTransactionsModalOpen(true);
+        }
+      } else {
+        toast.success(response.data?.msg || "Transactions synced successfully!");
+        notifyTransactionsRefreshed();
+      }
+    } catch (err) {
+      console.error("Failed to sync transactions:", err);
+      toast.error(
+        err.response?.data?.msg || err.message || "Failed to sync transactions"
+      );
+    } finally {
+      setIsSyncing(false);
+      toast.dismiss(toastId);
+    }
+  };
+
+  const handleSyncTransactions = async () => {
+    const toastId = toast.loading("Checking bank sender email...");
+
+    try {
+      const sender = await fetchBankSenderEmail();
+
+      if (!sender) {
+        setPendingSyncAfterSave(true);
+        setIsBankEmailModalOpen(true);
+        return;
+      }
+
+      await performSync();
+    } finally {
+      toast.dismiss(toastId);
+    }
+  };
+
+  const handleSaveBankEmail = async (email, syncAfterSave = false) => {
+    setIsSavingBankEmail(true);
+
+    try {
+      const response = await api.put("/user/bank-email", {
+        bankSenderEmail: email,
+      });
+
+      setBankSenderEmail(response.data?.bankSenderEmail || "");
+      setBankSenderVerified(response.data?.bankSenderVerified === true);
+      setIsBankEmailModalOpen(false);
+      toast.success("Bank sender email saved successfully.");
+
+      if (syncAfterSave || pendingSyncAfterSave) {
+        setPendingSyncAfterSave(false);
+        await performSync();
+      }
+    } catch (err) {
+      console.error("Failed to save bank sender email:", err);
+      toast.error(
+        err.response?.data?.msg || err.message || "Failed to save bank sender email"
+      );
+    } finally {
+      setIsSavingBankEmail(false);
+    }
+  };
+
+  const handleOpenBankEmailModal = async () => {
+    await fetchBankSenderEmail();
+    setPendingSyncAfterSave(false);
+    setIsBankEmailModalOpen(true);
+  };
+
+  const handleEditSenderEmailFromDialog = async () => {
+    await fetchBankSenderEmail();
+    setIsNoTransactionsModalOpen(false);
+    setPendingSyncAfterSave(true);
+    setIsBankEmailModalOpen(true);
+  };
+
+  const handleConfirmNoTransactions = async () => {
+    setIsNoTransactionsModalOpen(false);
+    const verified = await verifyBankSenderEmail();
+
+    if (verified) {
+      toast.success(
+        "No transactions found. Your sender email has been confirmed."
+      );
+    }
+  };
+
+  const handleRetrySync = async () => {
+    setIsNoTransactionsModalOpen(false);
+    const sender = await fetchBankSenderEmail();
+
+    if (!sender) {
+      setPendingSyncAfterSave(true);
+      setIsBankEmailModalOpen(true);
+      return;
+    }
+
+    await performSync();
+  };
 
 
     const fetchNicknames = async () => {
@@ -432,9 +582,75 @@ const ExpensesPage = () => {
       <div className="expenses-page">
         <div className="container">
           <div className="page-header">
-            <h1>Expense Tracking</h1>
-            <p>Monitor and categorize your spending</p>
+            <div>
+              <h1>Expense Tracking</h1>
+              <p>
+                Import your online transactions directly from your Gmail. On the first
+                sync, you'll be asked for your bank's transaction sender email so only
+                relevant emails are scanned.
+              </p>
+            </div>
+            <div className="page-header-actions">
+              <button
+                onClick={handleSyncTransactions}
+                className="btn btn-primary"
+                disabled={isSyncing}
+              >
+                {isSyncing ? "Syncing..." : "🔄 Sync Transactions"}
+              </button>
+            </div>
           </div>
+
+          <BankEmailModal
+            isOpen={isBankEmailModalOpen}
+            initialValue={bankSenderEmail}
+            title={pendingSyncAfterSave ? "Bank Sender Email" : "Edit Bank Sender Email"}
+            placeholder="alerts@hdfcbank.net"
+            onClose={() => {
+              setIsBankEmailModalOpen(false);
+              setPendingSyncAfterSave(false);
+            }}
+            onSave={(email) => handleSaveBankEmail(email, true)}
+            isSaving={isSavingBankEmail}
+          />
+
+          {isNoTransactionsModalOpen && (
+            <div className="modal-overlay">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h2>No Transactions Found</h2>
+                  <button
+                    onClick={() => setIsNoTransactionsModalOpen(false)}
+                    className="modal-close-btn"
+                  >
+                    &times;
+                  </button>
+                </div>
+                <div className="modal-form">
+                  <p>
+                    We couldn't find any transaction emails from the configured sender email.
+                    Are you sure this is the correct sender email used by your bank?
+                  </p>
+                  <div className="form-actions">
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={handleConfirmNoTransactions}
+                    >
+                      Yes, it's correct
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline"
+                      onClick={handleEditSenderEmailFromDialog}
+                    >
+                      Change Sender Email
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="stats-grid">
             <div className="stat-card">

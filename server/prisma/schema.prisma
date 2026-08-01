@@ -13,6 +13,8 @@ model User {
 
   name               String
   email              String   @unique
+  bankSenderEmail    String?
+  bankSenderVerified Boolean  @default(false)
 
   googleId           String   @unique
   picture            String?

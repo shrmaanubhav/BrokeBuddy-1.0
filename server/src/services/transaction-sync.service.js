@@ -8,6 +8,7 @@ export const syncUserData = async (userId) => {
     where: { id: userId },
     select: {
       email: true,
+      bankSenderEmail: true,
     },
   });
 
@@ -25,11 +26,16 @@ export const syncUserData = async (userId) => {
 
   const date_2mon = `${day}-${month}-${year}`;
 
+  if (!user.bankSenderEmail) {
+    throw new Error("BANK_SENDER_EMAIL_NOT_CONFIGURED");
+  }
+
   // Parse Gmail transactions using Python service
   const transactions = await parserService.parseExpenses({
     userId,
     email: user.email,
     date: date_2mon,
+    bankSenderEmail: user.bankSenderEmail,
   });
 
   const formattedTransactions = transactions.map((txn) => ({

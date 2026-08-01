@@ -10,6 +10,7 @@ import authRoutes from "./routes/auth.routes.js";
 import transactionRoutes from "./routes/transaction.routes.js";
 import nicknameRoutes from "./routes/nickname.routes.js";
 import profileRoutes from "./routes/profile.routes.js";
+import userRoutes from "./routes/user.routes.js";
 import chatRoutes from "./routes/chat.routes.js";
 
 // dotenv.config();
@@ -58,6 +59,7 @@ app.use("/api/transactions", transactionRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/nicknames", nicknameRoutes);
 app.use("/api/profile", profileRoutes);
+app.use("/api/user", userRoutes);
 
 const PORT = process.env.PORT || 4000;
 

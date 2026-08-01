@@ -237,6 +237,23 @@ h5 {
   color: #ccc;
 }
 
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.page-header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.form-error {
+  color: #f87171;
+  margin-top: 0.5rem;
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

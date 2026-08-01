@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 import os
+import time
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -23,7 +24,6 @@ class GmailAuth:
             raise RuntimeError("GOOGLE_CLIENT_SECRET missing.")
 
     def get_credentials(self, user_id: str) -> Credentials:
-
         encrypted = MailRepository.get_refresh_token(user_id)
 
         if encrypted is None:
@@ -42,6 +42,20 @@ class GmailAuth:
             ],
         )
 
-        credentials.refresh(Request())
+        last_error = None
 
-        return credentials
+        for attempt in range(3):
+            try:
+                credentials.refresh(Request())
+                return credentials
+
+            except Exception as e:
+                last_error = e
+
+                # Don't wait after the final attempt
+                if attempt < 2:
+                    time.sleep(1)
+
+        raise RuntimeError(
+            f"Failed to refresh Gmail access token after 3 attempts: {last_error}"
+        )
