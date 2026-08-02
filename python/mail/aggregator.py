@@ -21,6 +21,7 @@ class TransactionAggregator:
                 {
                     "COST": t.amount,
                     "UPI_ID": t.upi_id,
+                    "UPI_REFERENCE": t.upi_reference,
                     "DEBITED": t.debited,
                     "date": t.date,
                 }
