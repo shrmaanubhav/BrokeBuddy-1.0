@@ -38,13 +38,15 @@ model Transaction {
   category        ExpenseCategory   @default(OTHER)
   merchant        String?
   notes           String?
+  
+  upiReference    String?
   upiId           String?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, source, amount, transactionDate, upiId])
+  @@unique([userId, source, upiReference])
   @@index([userId])
   @@index([transactionDate])
   @@index([source])

@@ -3,6 +3,30 @@ import { TransactionSource } from "@prisma/client";
 
 import * as parserService from "./parser.service.js";
 
+const MONTHS = {
+  Jan: 0,
+  Feb: 1,
+  Mar: 2,
+  Apr: 3,
+  May: 4,
+  Jun: 5,
+  Jul: 6,
+  Aug: 7,
+  Sep: 8,
+  Oct: 9,
+  Nov: 10,
+  Dec: 11,
+};
+
+function parseTransactionDate(dateStr) {
+  if (!dateStr) return null;
+
+  const [day, month, year] = dateStr.split("-");
+
+  // Always normalize to UTC midnight
+  return new Date(Date.UTC(Number(year), MONTHS[month], Number(day)));
+}
+
 export const syncUserData = async (userId) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -16,7 +40,6 @@ export const syncUserData = async (userId) => {
     throw new Error("USER_NOT_FOUND");
   }
 
-  // Calculate date 60 days ago
   const date = new Date();
   date.setDate(date.getDate() - 60);
 
@@ -30,7 +53,6 @@ export const syncUserData = async (userId) => {
     throw new Error("BANK_SENDER_EMAIL_NOT_CONFIGURED");
   }
 
-  // Parse Gmail transactions using Python service
   const transactions = await parserService.parseExpenses({
     userId,
     email: user.email,
@@ -43,7 +65,8 @@ export const syncUserData = async (userId) => {
     source: TransactionSource.EMAIL,
     amount: Number(txn.COST),
     debited: txn.DEBITED,
-    transactionDate: new Date(txn.date),
+    transactionDate: parseTransactionDate(txn.date),
+    upiReference: txn.UPI_REFERENCE?.trim() || null,
     upiId: txn.UPI_ID?.trim().toLowerCase() || null,
     merchant: txn.nicknameId?.trim() || null,
   }));
