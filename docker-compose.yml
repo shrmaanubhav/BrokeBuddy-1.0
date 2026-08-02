@@ -1,0 +1,47 @@
+services:
+  server:
+    build:
+      context: ./server
+
+    container_name: brokebuddy-server
+
+    ports:
+      - "4000:4000"
+
+    env_file:
+      - ./server/.env.docker
+
+    environment:
+      RUN_MIGRATIONS: "false"
+
+    depends_on:
+      python:
+        condition: service_started
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  python:
+    build:
+      context: ./python
+
+    container_name: brokebuddy-python
+
+    ports:
+      - "5000:5000"
+
+    env_file:
+      - ./python/.env
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

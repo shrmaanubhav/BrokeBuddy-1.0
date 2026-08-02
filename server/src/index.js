@@ -54,6 +54,12 @@ app.get("/", (req, res) => {
   res.send("Backend is working!");
 });
 
+app.get("/health", (_, res) => {
+    res.status(200).json({
+        status: "ok",
+    });
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/chat", chatRoutes);

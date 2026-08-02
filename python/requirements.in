@@ -10,14 +10,8 @@ langgraph
 
 groq
 
-sentence-transformers
-transformers
-torch
-faiss-cpu
-
 pandas
 numpy
-scikit-learn
 
 requests
 beautifulsoup4
