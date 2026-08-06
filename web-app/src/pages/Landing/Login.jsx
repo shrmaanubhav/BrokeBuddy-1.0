@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 import "./Login.css";
 
 const Login = () => {
@@ -18,6 +20,11 @@ const Login = () => {
         <button className="login-button" onClick={handleGoogleLogin}>
           Continue with Google
         </button>
+
+        <div className="login-footer-links">
+          <Link to="/privacy">Privacy Policy</Link>
+          <Link to="/terms">Terms of Service</Link>
+        </div>
       </div>
     </div>
   );
