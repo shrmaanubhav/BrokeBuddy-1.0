@@ -35,7 +35,7 @@ export default function ChatBot() {
     setInputValue("");
     setIsTyping(true);
     try {
-      const { data } = await api.post("/chat", {
+      const { data } = await api.post("/api/chat", {
         query,
       });
       const chatResp =

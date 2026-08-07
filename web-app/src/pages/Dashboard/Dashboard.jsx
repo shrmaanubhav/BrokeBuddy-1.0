@@ -17,7 +17,7 @@ const Dashboard = ({ setIsAuthenticated }) => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const res = await api.get("/profile/me");
+        const res = await api.get("/api/profile/me");
         setName(res.data?.name || "");
       } catch (error) {
         console.error("Failed to fetch user profile:", error);
@@ -48,7 +48,7 @@ const Dashboard = ({ setIsAuthenticated }) => {
 
   const handleLogout = async () => {
     try {
-      const res = await api.post("/auth/logout");
+      const res = await api.post("/api/auth/logout");
       toast.success(res.data.msg || "Logged out");
       clearCache();
       setIsAuthenticated(false);
@@ -71,7 +71,7 @@ const Dashboard = ({ setIsAuthenticated }) => {
     }
 
     try {
-      await api.delete("/profile/account");
+      await api.delete("/api/profile/account");
       toast.success("Account deleted successfully.");
       localStorage.clear();
       if (setIsAuthenticated) {
@@ -88,7 +88,7 @@ const Dashboard = ({ setIsAuthenticated }) => {
 
   const fetchBankSenderEmail = async () => {
     try {
-      const response = await api.get("/user/bank-email");
+      const response = await api.get("/api/user/bank-email");
       setBankSenderEmail(response.data?.bankSenderEmail || "");
       setBankSenderVerified(response.data?.bankSenderVerified === true);
       return response.data?.bankSenderEmail || "";
@@ -107,7 +107,7 @@ const Dashboard = ({ setIsAuthenticated }) => {
     setIsSavingBankEmail(true);
 
     try {
-      const response = await api.put("/user/bank-email", {
+      const response = await api.put("/api/user/bank-email", {
         bankSenderEmail: email,
       });
 

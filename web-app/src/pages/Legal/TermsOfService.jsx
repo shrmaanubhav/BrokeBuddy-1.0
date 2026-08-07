@@ -12,12 +12,25 @@ const sections = [
     ),
   },
   {
+    title: "Eligibility",
+    content: (
+      <p>
+        You must be at least the age of majority in your jurisdiction and have
+        the legal authority to enter into these Terms. If you are using the
+        service on behalf of an organization, you represent that you are
+        authorized to bind that organization to these terms.
+      </p>
+    ),
+  },
+  {
     title: "Description of Service",
     content: (
       <p>
         BrokeBuddy helps users automatically organize and analyze personal
-        financial transactions so they can better understand spending patterns
-        and manage their budgets.
+        financial transactions so they can better understand spending patterns,
+        manage budgets, and review expense activity. The service integrates with
+        Google OAuth and the Gmail API to support secure account access and
+        transaction email processing.
       </p>
     ),
   },
@@ -26,8 +39,30 @@ const sections = [
     content: (
       <ul>
         <li>Provide accurate and up-to-date information when using the service.</li>
-        <li>Keep your Google account credentials and access secure.</li>
-        <li>Use the service lawfully and not attempt to misuse or abuse it.</li>
+        <li>Keep your Google account access and sign-in credentials secure.</li>
+        <li>Use the service lawfully and not attempt to misuse, overload, or abuse it.</li>
+      </ul>
+    ),
+  },
+  {
+    title: "Account Security",
+    content: (
+      <p>
+        You are responsible for maintaining the confidentiality of your account
+        and for all activity that occurs under your account. If you believe your
+        access has been compromised, you should disconnect the service or take
+        appropriate steps to secure your Google account.
+      </p>
+    ),
+  },
+  {
+    title: "Acceptable Use",
+    content: (
+      <ul>
+        <li>Do not misuse the platform or attempt to interfere with its operation.</li>
+        <li>Do not use the service for unlawful, fraudulent, or harmful purposes.</li>
+        <li>Do not reverse engineer, scrape, or attempt to access the service in unauthorized ways.</li>
+        <li>Do not attempt to abuse the platform through excessive requests or other disruptive behavior.</li>
       </ul>
     ),
   },
@@ -37,7 +72,7 @@ const sections = [
       <p>
         Your privacy is important to us. Please review the
         <a href="/privacy"> Privacy Policy</a> for details about how your data
-        is collected and used.
+        is collected, used, retained, and protected.
       </p>
     ),
   },
@@ -46,8 +81,8 @@ const sections = [
     content: (
       <p>
         BrokeBuddy, its branding, interface, content, and associated materials
-        remain the property of the developers and may not be copied or reused
-        without permission.
+        remain the property of the developers and may not be copied, republished,
+        or reused without permission.
       </p>
     ),
   },
@@ -57,7 +92,7 @@ const sections = [
       <ul>
         <li>Expense categorization may not always be perfectly accurate.</li>
         <li>You remain responsible for verifying financial information before relying on it.</li>
-        <li>BrokeBuddy does not provide financial, legal, or tax advice.</li>
+        <li>BrokeBuddy does not provide financial, investment, tax, or legal advice.</li>
       </ul>
     ),
   },
@@ -66,8 +101,19 @@ const sections = [
     content: (
       <p>
         BrokeBuddy is provided as-is and should not be held liable for indirect,
-        incidental, or consequential damages arising from the use of the
-        service.
+        incidental, special, or consequential damages arising from the use of
+        the service, except where such limitation is prohibited by applicable
+        law.
+      </p>
+    ),
+  },
+  {
+    title: "Termination",
+    content: (
+      <p>
+        We may suspend or terminate access to the service if you violate these
+        Terms or otherwise use the service in a manner that creates risk to the
+        platform, other users, or its operations.
       </p>
     ),
   },
@@ -77,6 +123,15 @@ const sections = [
       <p>
         We may update these Terms of Service from time to time. Continued use of
         the service after updates means you accept the revised terms.
+      </p>
+    ),
+  },
+  {
+    title: "Governing Law",
+    content: (
+      <p>
+        These Terms are governed by the laws of India, without regard to its
+        conflict of law principles.
       </p>
     ),
   },

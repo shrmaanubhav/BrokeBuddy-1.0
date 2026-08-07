@@ -61,7 +61,7 @@ const ExpensesPage = () => {
 
   const fetchBankSenderEmail = async () => {
     try {
-      const response = await api.get("/user/bank-email");
+      const response = await api.get("/api/user/bank-email");
       const sender = response.data?.bankSenderEmail || "";
       setBankSenderEmail(sender);
       setBankSenderVerified(response.data?.bankSenderVerified === true);
@@ -74,7 +74,7 @@ const ExpensesPage = () => {
 
   const verifyBankSenderEmail = async () => {
     try {
-      const response = await api.post("/user/bank-email/verify");
+      const response = await api.post("/api/user/bank-email/verify");
       setBankSenderVerified(response.data?.bankSenderVerified === true);
       return response.data?.bankSenderVerified === true;
     } catch (err) {
@@ -96,7 +96,7 @@ const ExpensesPage = () => {
     const toastId = toast.loading("Syncing transactions...");
 
     try {
-      const response = await api.post("/profile/sync-transactions");
+      const response = await api.post("/api/profile/sync-transactions");
 
       if (response.data?.total === 0) {
         if (bankSenderVerified) {
@@ -141,7 +141,7 @@ const ExpensesPage = () => {
     setIsSavingBankEmail(true);
 
     try {
-      const response = await api.put("/user/bank-email", {
+      const response = await api.put("/api/user/bank-email", {
         bankSenderEmail: email,
       });
 
@@ -204,7 +204,7 @@ const ExpensesPage = () => {
 
     const fetchNicknames = async () => {
       try {
-        const response = await api.get("/nicknames");
+        const response = await api.get("/api/nicknames");
 
         setNicknames(response.data || {});
       } catch (err) {
@@ -251,7 +251,7 @@ const ExpensesPage = () => {
     setError(null);
 
     try {
-      const response = await api.get("/transactions");
+      const response = await api.get("/api/transactions");
 
       console.log(response.data);
 
@@ -339,7 +339,7 @@ const ExpensesPage = () => {
     }
 
     try {
-      const response = await api.get("/transactions/search", {
+      const response = await api.get("/api/transactions/search", {
         params: {
           startDate: searchStartDate,
           endDate: searchEndDate || undefined,
@@ -392,7 +392,7 @@ const ExpensesPage = () => {
     setEditingIndex(null);
 
     try {
-      await api.post("/nicknames", {
+      await api.post("/api/nicknames", {
         upiId,
         nickname: trimmedNickname,
       });
@@ -459,7 +459,7 @@ const ExpensesPage = () => {
     };
 
     try {
-      await api.post("/transactions", payload);
+      await api.post("/api/transactions", payload);
 
       toast.success("Transaction added successfully");
 
@@ -499,7 +499,7 @@ const ExpensesPage = () => {
     setError(null);
 
     try {
-      await api.delete(`/transactions/${id}`);
+      await api.delete(`/api/transactions/${id}`);
 
       toast.success("Transaction deleted successfully");
       refreshTransactions();
