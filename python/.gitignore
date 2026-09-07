@@ -11,7 +11,7 @@ env/
 # Environment variables
 .env
 .env.*
-
+cloud-env.yaml
 # IDEs
 .vscode/
 .idea/
