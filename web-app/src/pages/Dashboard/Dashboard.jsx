@@ -51,6 +51,9 @@ const Dashboard = ({ setIsAuthenticated }) => {
       const res = await api.post("/api/auth/logout");
       toast.success(res.data.msg || "Logged out");
       clearCache();
+      if (typeof window !== "undefined") {
+        window.__BROKEBUDDY_DEV_MODE__ = false;
+      }
       setIsAuthenticated(false);
       navigate("/");
     } catch (err) {
@@ -74,6 +77,9 @@ const Dashboard = ({ setIsAuthenticated }) => {
       await api.delete("/api/profile/account");
       toast.success("Account deleted successfully.");
       localStorage.clear();
+      if (typeof window !== "undefined") {
+        window.__BROKEBUDDY_DEV_MODE__ = false;
+      }
       if (setIsAuthenticated) {
         setIsAuthenticated(false);
       }

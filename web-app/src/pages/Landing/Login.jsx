@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   BarChart3,
@@ -55,9 +55,13 @@ const productFeatures = [
 // ];
 
 const Login = () => {
+  const navigate = useNavigate();
+
   const handleGoogleLogin = () => {
-    const baseUrl = import.meta.env.VITE_API_URL || "";
-    window.location.href = `${baseUrl}/api/auth/google`;
+    if (typeof window !== "undefined") {
+      window.__BROKEBUDDY_DEV_MODE__ = true;
+    }
+    navigate("/dashboard");
   };
 
   return (
@@ -121,42 +125,44 @@ const Login = () => {
             manage your budget, and get personalized guidance with AI.
           </p>
 
-          <div className="hero-cta-group">
-            <button
-              type="button"
-              className="google-cta-button"
-              onClick={handleGoogleLogin}
-              id="main-google-login-btn"
-            >
-              <span className="google-icon-svg" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="20" height="20">
-                  <path
-                    d="M21.6 12.23c0-.79-.07-1.54-.2-2.27H12v4.3h5.39a4.61 4.61 0 0 1-2 3.03v2.5h3.24c1.9-1.75 2.99-4.33 2.99-7.56Z"
-                    fill="#4285F4"
-                  />
-                  <path
-                    d="M12 22c2.7 0 4.96-.89 6.62-2.41l-3.24-2.5c-.9.6-2.05.96-3.38.96-2.6 0-4.8-1.76-5.59-4.12H2.98v2.58A10 10 0 0 0 12 22Z"
-                    fill="#34A853"
-                  />
-                  <path
-                    d="M6.41 13.93A5.99 5.99 0 0 1 6.41 10.07V7.49H3.17a10 10 0 0 0 0 12.88l3.24-2.58Z"
-                    fill="#FBBC05"
-                  />
-                  <path
-                    d="M12 6.04c1.47 0 2.79.51 3.83 1.5l2.87-2.87C16.96 2.99 14.7 2 12 2A10 10 0 0 0 3.17 7.49l3.24 2.58C7.2 7.8 9.4 6.04 12 6.04Z"
-                    fill="#EA4335"
-                  />
-                </svg>
-              </span>
-              <span>Continue with Google</span>
-              <ArrowRight size={16} className="btn-arrow" />
-            </button>
+        <div className="hero-cta-group">
+          <Link
+            to="/dashboard"
+            onClick={handleGoogleLogin}
+            className="google-cta-button"
+            id="main-google-login-btn"
+          >
+            <span className="google-icon-svg" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <path
+                  d="M21.6 12.23c0-.79-.07-1.54-.2-2.27H12v4.3h5.39a4.61 4.61 0 0 1-2 3.03v2.5h3.24c1.9-1.75 2.99-4.33 2.99-7.56Z"
+                  fill="#4285F4"
+                />
+                <path
+                  d="M12 22c2.7 0 4.96-.89 6.62-2.41l-3.24-2.5c-.9.6-2.05.96-3.38.96-2.6 0-4.8-1.76-5.59-4.12H2.98v2.58A10 10 0 0 0 12 22Z"
+                  fill="#34A853"
+                />
+                <path
+                  d="M6.41 13.93A5.99 5.99 0 0 1 6.41 10.07V7.49H3.17a10 10 0 0 0 0 12.88l3.24-2.58Z"
+                  fill="#FBBC05"
+                />
+                <path
+                  d="M12 6.04c1.47 0 2.79.51 3.83 1.5l2.87-2.87C16.96 2.99 14.7 2 12 2A10 10 0 0 0 3.17 7.49l3.24 2.58C7.2 7.8 9.4 6.04 12 6.04Z"
+                  fill="#EA4335"
+                />
+              </svg>
+            </span>
 
-            <div className="hero-security-note">
-              <Lock size={13} className="lock-icon" />
-              <span>Read-only Gmail access &bull; Secure & private</span>
-            </div>
+            <span>Continue with Google</span>
+            <ArrowRight size={16} className="btn-arrow" />
+          </Link>
+
+          <div className="hero-security-note">
+            <Lock size={13} className="lock-icon" />
+            <span>Read-only Gmail access &bull; Secure & private</span>
           </div>
+        </div>
+          
         </section>
 
         {/* 3 FEATURE CARDS */}
