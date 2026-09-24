@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
 import "./Expenses.css";
 import toast from "react-hot-toast";
@@ -23,15 +23,21 @@ const generateMonthOptions = (monthsBack = 24) => {
   return opts;
 };
 
-// Helpers for safe date parsing/formatting without timezone shifts
-const parseISODateLocal = (isoYmd) => {
-  if (!isoYmd) return null;
-  const parts = isoYmd.split("-");
-  if (parts.length !== 3) return new Date(isoYmd);
-  const y = Number(parts[0]);
-  const m = Number(parts[1]) - 1;
-  const d = Number(parts[2]);
-  return new Date(y, m, d);
+// Date normalization helper: always produce a valid Date object in local timezone
+const normalizeTransactionDate = (isoDatetime) => {
+  if (!isoDatetime) return null;
+  // Try built-in Date parsing for ISO strings
+  const parsed = new Date(isoDatetime);
+  if (!Number.isNaN(parsed.getTime())) return parsed;
+
+  // Fallback: try extracting YYYY-MM-DD from start of string
+  const match = String(isoDatetime).match(/(\d{4}-\d{2}-\d{2})/);
+  if (match) {
+    const [y, m, d] = match[1].split("-").map(Number);
+    return new Date(y, m - 1, d);
+  }
+
+  return null;
 };
 
 const formatYMD = (date) => {
@@ -40,6 +46,20 @@ const formatYMD = (date) => {
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
+};
+
+// Parse a YYYY-MM-DD string into a Date at local 00:00
+const parseYMDToDate = (ymd) => {
+  if (!ymd) return null;
+  const parts = String(ymd).split("-").map(Number);
+  if (parts.length < 3) return null;
+  const [y, m, d] = parts;
+  return new Date(y, m - 1, d);
+};
+
+const addOneDay = (date) => {
+  if (!date) return null;
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
 };
 
 // Simple Calendar component (no external libs)
@@ -203,14 +223,7 @@ const ExpensesPage = () => {
     setCurrentPage(1);
   }, [selectedRange, selectedFilter, searchQuery, searchStartDate, searchEndDate, customStartDate, customEndDate]);
 
-  // Ensure currentPage is within bounds when totalPages changes
-  useEffect(() => {
-    if (currentPage > 1) {
-      const totalPages = Math.max(1, Math.ceil(expenses.filter((item) => matchesDateRange(item) && matchesFilter(item) && matchesQuery(item)).length / TRANSACTIONS_PER_PAGE));
-      if (currentPage > totalPages) setCurrentPage(Math.max(1, totalPages));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expenses.length]);
+  // (removed duplicate page-sync effect to keep single source of truth for currentPage)
 
   // Close transaction menus when clicking outside
   useEffect(() => {
@@ -603,27 +616,27 @@ const ExpensesPage = () => {
 
     switch (range) {
       case "thisYear":
-        return { start: yearStart, end: new Date(now.getFullYear(), 11, 31) };
+        return { start: yearStart, end: new Date(now.getFullYear() + 1, 0, 1) };
       case "custom":
         if (!customStartDate && !customEndDate) {
-          return { start: startOfMonth, end: endOfMonth };
+          return { start: startOfMonth, end: addOneDay(endOfMonth) };
         }
         return {
-          start: customStartDate ? parseISODateLocal(customStartDate) : new Date(0),
-          end: customEndDate ? parseISODateLocal(customEndDate) : new Date(),
+          start: customStartDate ? parseYMDToDate(customStartDate) : new Date(0),
+          end: customEndDate ? addOneDay(parseYMDToDate(customEndDate)) : new Date(),
         };
       default:
-        // default to current month
-        return { start: startOfMonth, end: endOfMonth };
+        // default to current month (end exclusive)
+        return { start: startOfMonth, end: addOneDay(endOfMonth) };
     }
   };
 
   const matchesDateRange = (transaction) => {
-    if (!transaction?.transactionDate) return true;
+    if (!transaction) return false;
     const currentRange = getDateRangeBounds(selectedRange);
-    const txDate = new Date(transaction.transactionDate);
-    if (Number.isNaN(txDate.getTime())) return true;
-    return txDate >= currentRange.start && txDate <= currentRange.end;
+    const txDate = transaction.__normalizedDate || normalizeTransactionDate(transaction.transactionDate);
+    if (!txDate) return false;
+    return txDate >= currentRange.start && txDate < currentRange.end;
   };
 
   const matchesFilter = (transaction) => {
@@ -655,9 +668,21 @@ const ExpensesPage = () => {
       .some((value) => String(value).toLowerCase().includes(qry));
   };
 
-  const filteredTransactions = [...expenses]
-    .filter((item) => matchesDateRange(item) && matchesFilter(item) && matchesQuery(item))
-    .sort((a, b) => new Date(b.transactionDate) - new Date(a.transactionDate));
+  // Single pipeline: normalize dates -> filter -> sort -> paginate -> group
+  const normalizedExpenses = useMemo(() =>
+    expenses.map((tx) => ({ ...tx, __normalizedDate: normalizeTransactionDate(tx.transactionDate) })),
+    [expenses]
+  );
+
+  const filteredTransactions = useMemo(() => {
+    return normalizedExpenses
+      .filter((item) => {
+        // must have a valid normalized date to be considered
+        if (!item.__normalizedDate) return false;
+        return matchesDateRange(item) && matchesFilter(item) && matchesQuery(item);
+      })
+      .sort((a, b) => b.__normalizedDate - a.__normalizedDate);
+  }, [normalizedExpenses, selectedRange, selectedFilter, searchQuery, searchStartDate, searchEndDate, customStartDate, customEndDate]);
 
   // Pagination: slice after filtering
   const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / TRANSACTIONS_PER_PAGE));
@@ -667,18 +692,32 @@ const ExpensesPage = () => {
     safeCurrentPage * TRANSACTIONS_PER_PAGE
   );
 
-  const groupedTransactions = paginatedTransactions.reduce((groups, tx) => {
-    const date = parseISODateLocal(tx.transactionDate);
-    const key = formatYMD(date);
-    if (!groups[key]) {
-      groups[key] = []; 
+  // Keep currentPage clamped to available pages when filtered result set changes
+  useEffect(() => {
+    const computedTotal = Math.max(1, Math.ceil(filteredTransactions.length / TRANSACTIONS_PER_PAGE));
+    if (currentPage > computedTotal) {
+      setCurrentPage(computedTotal);
     }
+  }, [filteredTransactions.length]);
+
+  // Ensure currentPage state is always in sync with safeCurrentPage
+  useEffect(() => {
+    if (currentPage !== safeCurrentPage) setCurrentPage(safeCurrentPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [safeCurrentPage]);
+
+  const groupedTransactions = paginatedTransactions.reduce((groups, tx) => {
+    const date = tx.__normalizedDate || normalizeTransactionDate(tx.transactionDate);
+    if (!date) return groups;
+    const key = formatYMD(date);
+    if (!groups[key]) groups[key] = [];
     groups[key].push(tx);
     return groups;
   }, {});
 
-  const formatDateLabel = (isoDate) => {
-    const date = new Date(isoDate);
+  const formatDateLabel = (isoDateKey) => {
+    const dateParts = isoDateKey.split("-").map(Number);
+    const date = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
     return `${date.toLocaleString("en-US", { month: "long" }).toUpperCase()} ${date.getDate()}`;
   };
 
@@ -693,7 +732,7 @@ const ExpensesPage = () => {
   const dateRangeLabel =
     selectedRange === "custom"
       ? customStartDate && customEndDate
-        ? `${parseISODateLocal(customStartDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })} – ${parseISODateLocal(customEndDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`
+        ? `${parseYMDToDate(customStartDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })} – ${parseYMDToDate(customEndDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`
         : "Custom range"
       : monthOptions.find((option) => option.value === selectedRange)?.label || "This month";
 
@@ -903,8 +942,8 @@ const ExpensesPage = () => {
                     />
 
                     <div className="custom-picker-summary">
-                      <div><strong>Start:</strong> {pickerStart ? parseISODateLocal(formatYMD(pickerStart)).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—"}</div>
-                      <div><strong>End:</strong> {pickerEnd ? parseISODateLocal(formatYMD(pickerEnd)).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—"}</div>
+                      <div><strong>Start:</strong> {pickerStart ? pickerStart.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—"}</div>
+                      <div><strong>End:</strong> {pickerEnd ? pickerEnd.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—"}</div>
                     </div>
 
                     <div className="custom-picker-actions">
@@ -994,11 +1033,10 @@ const ExpensesPage = () => {
                             {signature}₹{amount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
                           </span>
                           <span className="transaction-date">
-                            {parseISODateLocal(transaction.transactionDate).toLocaleDateString("en-GB", {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                            })}
+                            {(() => {
+                              const d = transaction.__normalizedDate || normalizeTransactionDate(transaction.transactionDate);
+                              return d ? d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "";
+                            })()}
                           </span>
                         </div>
 
@@ -1052,7 +1090,7 @@ const ExpensesPage = () => {
               <button
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage <= 1}
+                disabled={safeCurrentPage <= 1}
               >
                 Previous
               </button>
@@ -1069,9 +1107,9 @@ const ExpensesPage = () => {
                     set.add(2);
                     set.add(totalPages - 1);
                     set.add(totalPages);
-                    set.add(currentPage - 1);
-                    set.add(currentPage);
-                    set.add(currentPage + 1);
+                    set.add(safeCurrentPage - 1);
+                    set.add(safeCurrentPage);
+                    set.add(safeCurrentPage + 1);
                     const arr = Array.from(set).filter((n) => n >= 1 && n <= totalPages).sort((a, b) => a - b);
                     let last = 0;
                     arr.forEach((n) => {
@@ -1088,7 +1126,7 @@ const ExpensesPage = () => {
                       <button
                         key={p}
                         type="button"
-                        className={p === currentPage ? "active" : ""}
+                        className={p === safeCurrentPage ? "active" : ""}
                         onClick={() => setCurrentPage(p)}
                       >
                         {p}
@@ -1101,7 +1139,7 @@ const ExpensesPage = () => {
               <button
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage >= totalPages}
+                disabled={safeCurrentPage >= totalPages}
               >
                 Next
               </button>

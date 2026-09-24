@@ -55,7 +55,7 @@ export const MOCK_TRANSACTIONS = [
     notes: "Lunch order",
   },
     {
-    id: "tx-1001",
+    id: "tx-1001-dup1",
     merchant: "Swiggy",
     amount: 320,
     debited: true,
@@ -66,7 +66,7 @@ export const MOCK_TRANSACTIONS = [
     notes: "Dinner order",
   },
   {
-    id: "tx-1002",
+    id: "tx-1002-dup1",
     merchant: "Amazon",
     amount: 1240,
     debited: true,
@@ -77,7 +77,7 @@ export const MOCK_TRANSACTIONS = [
     notes: "Monthly essentials",
   },
   {
-    id: "tx-1003",
+    id: "tx-1003-dup1",
     merchant: "Uber",
     amount: 420,
     debited: true,
@@ -88,7 +88,7 @@ export const MOCK_TRANSACTIONS = [
     notes: "Ride home",
   },
   {
-    id: "tx-1004",
+    id: "tx-1004-dup1",
     merchant: "Salary",
     amount: 38000,
     debited: false,
@@ -99,7 +99,7 @@ export const MOCK_TRANSACTIONS = [
     notes: "Monthly salary",
   },
   {
-    id: "tx-1005",
+    id: "tx-1005-dup1",
     merchant: "Zomato",
     amount: 540,
     debited: true,
