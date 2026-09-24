@@ -1,10 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import { verifySession as verifySessionRequest } from "../services/authService";
 
-const DEV_USER = {
-  name: "Test User",
-  email: "test@brokebuddy.local",
-};
+import { MOCK_USER } from "../dev/mockData/user";
+import { isDevMode } from "../dev/mockMode";
+import { verifySession as verifySessionRequest } from "../services/authService";
 
 export default function useAuth() {
   const [loading, setLoading] = useState(true);
@@ -12,16 +10,13 @@ export default function useAuth() {
   const [user, setUser] = useState(null);
 
   const applyAuthState = useCallback((authenticated, nextUser = null) => {
-    setUser(authenticated ? nextUser || DEV_USER : null);
+    setUser(authenticated ? nextUser || MOCK_USER : null);
     setIsAuthenticated(authenticated);
   }, []);
 
   const verifySession = useCallback(async () => {
-    const isDevMode =
-      typeof window !== "undefined" && window.__BROKEBUDDY_DEV_MODE__ === true;
-
-    if (isDevMode) {
-      applyAuthState(true, DEV_USER);
+    if (isDevMode()) {
+      applyAuthState(true, MOCK_USER);
       setLoading(false);
       return;
     }
