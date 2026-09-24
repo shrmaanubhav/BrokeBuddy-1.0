@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import "./Expenses.css";
 import toast from "react-hot-toast";
@@ -8,6 +8,133 @@ import BankEmailModal from "../../components/BankEmailModal";
 const CACHE_KEY = "transactions_cache";
 const CACHE_TIME_KEY = "transactions_time";
 const CACHE_DURATION = 30 * 60 * 1000;
+const TRANSACTIONS_PER_PAGE = 10;
+
+const generateMonthOptions = (monthsBack = 24) => {
+  const opts = [];
+  const now = new Date();
+  for (let i = 0; i < monthsBack; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const label = d.toLocaleString("en-US", { month: "long", year: "numeric" });
+    opts.push({ value: `${year}-${month}`, label });
+  }
+  return opts;
+};
+
+// Helpers for safe date parsing/formatting without timezone shifts
+const parseISODateLocal = (isoYmd) => {
+  if (!isoYmd) return null;
+  const parts = isoYmd.split("-");
+  if (parts.length !== 3) return new Date(isoYmd);
+  const y = Number(parts[0]);
+  const m = Number(parts[1]) - 1;
+  const d = Number(parts[2]);
+  return new Date(y, m, d);
+};
+
+const formatYMD = (date) => {
+  if (!date) return "";
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+};
+
+// Simple Calendar component (no external libs)
+const Calendar = ({ start, end, hover, onDayClick, onDayHover }) => {
+  const [visible, setVisible] = useState(new Date());
+
+  const startOfMonth = (d) => new Date(d.getFullYear(), d.getMonth(), 1);
+  const endOfMonth = (d) => new Date(d.getFullYear(), d.getMonth() + 1, 0);
+
+  const prevMonth = () => setVisible((v) => new Date(v.getFullYear(), v.getMonth() - 1, 1));
+  const nextMonth = () => setVisible((v) => new Date(v.getFullYear(), v.getMonth() + 1, 1));
+
+  const month = visible.getMonth();
+  const year = visible.getFullYear();
+
+  // build days starting Monday
+  const firstWeekday = (d) => (d.getDay() + 6) % 7; // 0=Mon
+  const first = startOfMonth(visible);
+  const last = endOfMonth(visible);
+  const padStart = firstWeekday(first);
+  const days = [];
+  for (let i = 0; i < padStart; i++) days.push(null);
+  for (let d = 1; d <= last.getDate(); d++) days.push(new Date(year, month, d));
+
+  const inRange = (d, s, e) => {
+    if (!d) return false;
+    const t = d.setHours(0,0,0,0);
+    if (s && e) return t >= s.setHours(0,0,0,0) && t <= e.setHours(0,0,0,0);
+    return false;
+  };
+
+  const previewRange = (d) => {
+    if (!start || end) return false;
+    if (!d) return false;
+    const s = new Date(start);
+    const h = hover ? new Date(hover) : d;
+    const a = s < h ? s : h;
+    const b = s < h ? h : s;
+    return d >= a && d <= b;
+  };
+
+  return (
+    <div className="calendar-root">
+      <div className="calendar-header">
+        <button type="button" className="calendar-nav" onClick={prevMonth} aria-label="Previous month">‹</button>
+        <div className="calendar-title">{visible.toLocaleString("en-US", { month: "long", year: "numeric" })}</div>
+        <button type="button" className="calendar-nav" onClick={nextMonth} aria-label="Next month">›</button>
+      </div>
+      <div className="calendar-grid">
+        {['Mo','Tu','We','Th','Fr','Sa','Su'].map((d) => (
+          <div key={d} className="calendar-weekday">{d}</div>
+        ))}
+        {days.map((dt, idx) => {
+          const isStart = dt && start && dt.toDateString() === new Date(start).toDateString();
+          const isEnd = dt && end && dt.toDateString() === new Date(end).toDateString();
+          const isIn = dt && start && end && (new Date(dt) >= new Date(start) && new Date(dt) <= new Date(end));
+          const isPreview = dt && start && !end && hover && previewRange(dt);
+          const cls = [
+            'calendar-cell',
+            isStart ? 'is-start' : '',
+            isEnd ? 'is-end' : '',
+            isIn ? 'in-range' : '',
+            isPreview ? 'in-preview' : '',
+          ].join(' ');
+
+          return (
+            <div
+              key={idx}
+              className={cls}
+              onMouseEnter={() => onDayHover && dt && onDayHover(new Date(dt))}
+              onMouseLeave={() => onDayHover && onDayHover(null)}
+              onClick={() => dt && onDayClick && onDayClick(new Date(dt))}
+            >
+              {dt ? dt.getDate() : ''}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+const FILTER_OPTIONS = [
+  { value: "all", label: "All" },
+  { value: "expenses", label: "Expenses" },
+  { value: "income", label: "Income" },
+  { value: "upi", label: "UPI" },
+  { value: "manual", label: "Manual" },
+];
+
+const formatCurrency = (value) =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 2,
+  }).format(Number(value || 0));
 
 const loadCache = () => {
   const data = localStorage.getItem(CACHE_KEY);
@@ -31,12 +158,10 @@ const invalidateCache = () => {
 
 const ExpensesPage = () => {
   const [cachedTransactions, setCachedTransactions] = useState([]);
-
   const [expenses, setExpenses] = useState([]);
   const [nicknames, setNicknames] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showAll, setShowAll] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
   const [inlineInputValue, setInlineInputValue] = useState("");
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
@@ -58,6 +183,45 @@ const ExpensesPage = () => {
   const [isSavingBankEmail, setIsSavingBankEmail] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isNoTransactionsModalOpen, setIsNoTransactionsModalOpen] = useState(false);
+  const [selectedFilter, setSelectedFilter] = useState("all");
+  const monthOptions = generateMonthOptions(24);
+  const recentMonths = monthOptions.slice(0, 5);
+  const defaultMonthValue = recentMonths.length ? recentMonths[0].value : "custom";
+  const [selectedRange, setSelectedRange] = useState(defaultMonthValue);
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
+  const [showMenuId, setShowMenuId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [customPickerOpen, setCustomPickerOpen] = useState(false);
+  const [pickerStart, setPickerStart] = useState(null);
+  const [pickerEnd, setPickerEnd] = useState(null);
+  const [pickerHover, setPickerHover] = useState(null);
+  const pickerRef = useRef(null);
+
+  // Reset page when filters/search/month change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedRange, selectedFilter, searchQuery, searchStartDate, searchEndDate, customStartDate, customEndDate]);
+
+  // Ensure currentPage is within bounds when totalPages changes
+  useEffect(() => {
+    if (currentPage > 1) {
+      const totalPages = Math.max(1, Math.ceil(expenses.filter((item) => matchesDateRange(item) && matchesFilter(item) && matchesQuery(item)).length / TRANSACTIONS_PER_PAGE));
+      if (currentPage > totalPages) setCurrentPage(Math.max(1, totalPages));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expenses.length]);
+
+  // Close transaction menus when clicking outside
+  useEffect(() => {
+    const handler = (e) => {
+      if (!e.target.closest || !e.target.closest(".transaction-actions")) {
+        setShowMenuId(null);
+      }
+    };
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, []);
 
   const fetchBankSenderEmail = async () => {
     try {
@@ -80,8 +244,7 @@ const ExpensesPage = () => {
     } catch (err) {
       console.error("Failed to verify bank sender email:", err);
       toast.error(
-        err.response?.data?.msg || err.message ||
-          "Failed to confirm sender email."
+        err.response?.data?.msg || err.message || "Failed to confirm sender email."
       );
       return false;
     }
@@ -124,13 +287,11 @@ const ExpensesPage = () => {
 
     try {
       const sender = await fetchBankSenderEmail();
-
       if (!sender) {
         setPendingSyncAfterSave(true);
         setIsBankEmailModalOpen(true);
         return;
       }
-
       await performSync();
     } finally {
       toast.dismiss(toastId);
@@ -164,72 +325,27 @@ const ExpensesPage = () => {
     }
   };
 
-  const handleOpenBankEmailModal = async () => {
-    await fetchBankSenderEmail();
-    setPendingSyncAfterSave(false);
-    setIsBankEmailModalOpen(true);
-  };
-
-  const handleEditSenderEmailFromDialog = async () => {
-    await fetchBankSenderEmail();
-    setIsNoTransactionsModalOpen(false);
-    setPendingSyncAfterSave(true);
-    setIsBankEmailModalOpen(true);
-  };
-
-  const handleConfirmNoTransactions = async () => {
-    setIsNoTransactionsModalOpen(false);
-    const verified = await verifyBankSenderEmail();
-
-    if (verified) {
-      toast.success(
-        "No transactions found. Your sender email has been confirmed."
+  const fetchNicknames = async () => {
+    try {
+      const response = await api.get("/api/nicknames");
+      setNicknames(response.data || {});
+    } catch (err) {
+      console.error("Failed to fetch nicknames:", err);
+      toast.error(
+        err.response?.data?.message || err.message || "Failed to fetch nicknames"
       );
     }
   };
 
-  const handleRetrySync = async () => {
-    setIsNoTransactionsModalOpen(false);
-    const sender = await fetchBankSenderEmail();
-
-    if (!sender) {
-      setPendingSyncAfterSave(true);
-      setIsBankEmailModalOpen(true);
-      return;
-    }
-
-    await performSync();
-  };
-
-
-    const fetchNicknames = async () => {
-      try {
-        const response = await api.get("/api/nicknames");
-
-        setNicknames(response.data || {});
-      } catch (err) {
-        console.error("Failed to fetch nicknames:", err);
-
-        toast.error(
-          err.response?.data?.message ||
-            err.message ||
-            "Failed to fetch nicknames"
-        );
-      }
-    };
-
-  useEffect(() => { 
+  useEffect(() => {
     fetchNicknames();
 
     const cached = loadCache();
-
     if (cached) {
-      console.log("✅ Using cached transactions");
       setExpenses(cached);
       setCachedTransactions(cached);
       setIsLoading(false);
     } else {
-      console.log("⚠ No cache found, fetching from backend...");
       fetchRecentData();
     }
   }, []);
@@ -252,21 +368,14 @@ const ExpensesPage = () => {
 
     try {
       const response = await api.get("/api/transactions");
-
-      console.log(response.data);
-
       const transactions = response.data || [];
-
       setExpenses(transactions);
       setCachedTransactions(transactions);
       saveCache(transactions);
     } catch (err) {
       console.error("Failed to fetch transactions:", err);
-
       setError(
-        err.response?.data?.message ||
-          err.message ||
-          "Failed to fetch transactions"
+        err.response?.data?.message || err.message || "Failed to fetch transactions"
       );
     } finally {
       setIsLoading(false);
@@ -294,8 +403,6 @@ const ExpensesPage = () => {
     const diffDays = Math.floor((today - start) / (1000 * 60 * 60 * 24));
 
     if (diffDays <= 7 && cachedTransactions.length > 0) {
-      console.log("✅ Search is within 7 days — checking cache...");
-
       const startISO = new Date(searchStartDate).toISOString().split("T")[0];
       const endISO = searchEndDate
         ? new Date(searchEndDate).toISOString().split("T")[0]
@@ -306,7 +413,6 @@ const ExpensesPage = () => {
         const matchDate = txnISO >= startISO && txnISO <= endISO;
         const matchQuery = (() => {
           if (!searchQuery) return true;
-
           const query = searchQuery.toLowerCase();
           const upi = (t.upiId || "").toLowerCase();
           const merchant = (t.merchant || "").toLowerCase();
@@ -325,17 +431,12 @@ const ExpensesPage = () => {
       });
 
       if (filtered.length > 0) {
-        console.log("✅ Using cached results");
         setExpenses(filtered);
         setIsSearchActive(true);
         setIsSearchModalOpen(false);
         setIsLoading(false);
         return;
       }
-
-      console.log("No Cache — calling backend");
-    } else {
-      console.log("cache empty — calling backend");
     }
 
     try {
@@ -352,14 +453,10 @@ const ExpensesPage = () => {
       setIsSearchModalOpen(false);
     } catch (err) {
       console.error("Failed to search:", err);
-
       setError(
-        err.response?.data?.message ||
-          err.message ||
-          "Search request failed"
+        err.response?.data?.message || err.message || "Search request failed"
       );
     } finally {
-      console.log("=== SEARCH DEBUG END (BACKEND CALL) ===");
       setIsLoading(false);
     }
   };
@@ -378,7 +475,7 @@ const ExpensesPage = () => {
     setInlineInputValue(currentNickname || "");
   };
 
-  const handleSaveNickname = async (upiId, index) => {
+  const handleSaveNickname = async (upiId) => {
     const trimmedNickname = inlineInputValue.trim();
     const updatedNicknames = { ...nicknames };
 
@@ -398,17 +495,14 @@ const ExpensesPage = () => {
       });
     } catch (err) {
       console.error("Failed to save nickname:", err);
-
       toast.error(
-        err.response?.data?.message ||
-          err.message ||
-          "Failed to save nickname"
+        err.response?.data?.message || err.message || "Failed to save nickname"
       );
     }
   };
 
   const handleAddFormChange = (e) => {
-    const { name, value, type } = e.target;
+    const { name, value } = e.target;
     if (name === "debited") {
       setNewExpenseData((prevData) => ({
         ...prevData,
@@ -421,7 +515,6 @@ const ExpensesPage = () => {
       }));
     }
   };
-
 
   const handleAddSubmit = async (e) => {
     e.preventDefault();
@@ -436,8 +529,6 @@ const ExpensesPage = () => {
     }
 
     const input = newExpenseData.nicknameOrUpiId.trim();
-
-    // Check whether the entered text is an existing nickname
     const nicknameMatch = Object.entries(nicknames).find(
       ([, nickname]) => nickname.toLowerCase() === input.toLowerCase()
     );
@@ -446,13 +537,8 @@ const ExpensesPage = () => {
     setError(null);
 
     const payload = {
-      // Always preserve the entered name as the merchant
       merchant: input,
-
-      // If the name already exists as a nickname, associate its UPI ID.
-      // Otherwise this is a brand-new manual transaction.
       upiId: nicknameMatch ? nicknameMatch[0] : null,
-
       amount: Number(newExpenseData.amount),
       debited: newExpenseData.debited,
       transactionDate: newExpenseData.date,
@@ -460,26 +546,19 @@ const ExpensesPage = () => {
 
     try {
       await api.post("/api/transactions", payload);
-
       toast.success("Transaction added successfully");
-
       setIsAddModalOpen(false);
-
       setNewExpenseData({
         nicknameOrUpiId: "",
         amount: "",
         debited: true,
         date: "",
       });
-
       refreshTransactions();
     } catch (err) {
       console.error("Failed to add transaction:", err);
-
       setError(
-        err.response?.data?.message ||
-          err.message ||
-          "Failed to add transaction."
+        err.response?.data?.message || err.message || "Failed to add transaction."
       );
     } finally {
       setIsLoading(false);
@@ -487,11 +566,7 @@ const ExpensesPage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (
-      !window.confirm(
-        "Are you sure you want to delete this manual transaction?"
-      )
-    ) {
+    if (!window.confirm("Are you sure you want to delete this manual transaction?")) {
       return;
     }
 
@@ -500,569 +575,701 @@ const ExpensesPage = () => {
 
     try {
       await api.delete(`/api/transactions/${id}`);
-
       toast.success("Transaction deleted successfully");
       refreshTransactions();
     } catch (err) {
       console.error("Failed to delete transaction:", err);
       setError(
-        err.response?.data?.message ||
-          err.message ||
-          "Failed to delete transaction."
+        err.response?.data?.message || err.message || "Failed to delete transaction."
       );
     } finally {
       setIsLoading(false);
     }
   };
 
-  const totalExpenses = expenses
-    .filter((expense) => expense.debited)
-    .reduce((sum, expense) => sum + (expense.amount || 0), 0);
-  const transactionCount = expenses.length;
+  const getDateRangeBounds = (range) => {
+    const now = new Date();
+    // If the range is a month value like 'YYYY-MM', parse that month
+    if (range && /^\d{4}-\d{2}$/.test(range)) {
+      const [y, m] = range.split("-").map(Number);
+      const start = new Date(y, m - 1, 1);
+      const end = new Date(y, m, 0);
+      return { start, end };
+    }
 
-  const totalCredited = expenses
-    .filter((expense) => !expense.debited)
-    .reduce((sum, expense) => sum + (expense.amount || 0), 0);
+    const yearStart = new Date(now.getFullYear(), 0, 1);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    switch (range) {
+      case "thisYear":
+        return { start: yearStart, end: new Date(now.getFullYear(), 11, 31) };
+      case "custom":
+        if (!customStartDate && !customEndDate) {
+          return { start: startOfMonth, end: endOfMonth };
+        }
+        return {
+          start: customStartDate ? parseISODateLocal(customStartDate) : new Date(0),
+          end: customEndDate ? parseISODateLocal(customEndDate) : new Date(),
+        };
+      default:
+        // default to current month
+        return { start: startOfMonth, end: endOfMonth };
+    }
+  };
+
+  const matchesDateRange = (transaction) => {
+    if (!transaction?.transactionDate) return true;
+    const currentRange = getDateRangeBounds(selectedRange);
+    const txDate = new Date(transaction.transactionDate);
+    if (Number.isNaN(txDate.getTime())) return true;
+    return txDate >= currentRange.start && txDate <= currentRange.end;
+  };
+
+  const matchesFilter = (transaction) => {
+    if (selectedFilter === "all") return true;
+    if (selectedFilter === "expenses") return !!transaction.debited;
+    if (selectedFilter === "income") return !transaction.debited;
+    if (selectedFilter === "upi") {
+      const source = (transaction.source || "").toUpperCase();
+      return source.includes("UPI") || !!transaction.upiId;
+    }
+    if (selectedFilter === "manual") {
+      return (transaction.source || "").toUpperCase().includes("MANUAL");
+    }
+    return true;
+  };
+
+  const matchesQuery = (transaction) => {
+    const qry = searchQuery.trim().toLowerCase();
+    if (!qry) return true;
+
+    return [
+      transaction.merchant,
+      transaction.upiId,
+      transaction.notes,
+      transaction.category,
+      transaction.source,
+    ]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(qry));
+  };
+
+  const filteredTransactions = [...expenses]
+    .filter((item) => matchesDateRange(item) && matchesFilter(item) && matchesQuery(item))
+    .sort((a, b) => new Date(b.transactionDate) - new Date(a.transactionDate));
+
+  // Pagination: slice after filtering
+  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / TRANSACTIONS_PER_PAGE));
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+  const paginatedTransactions = filteredTransactions.slice(
+    (safeCurrentPage - 1) * TRANSACTIONS_PER_PAGE,
+    safeCurrentPage * TRANSACTIONS_PER_PAGE
+  );
+
+  const groupedTransactions = paginatedTransactions.reduce((groups, tx) => {
+    const date = parseISODateLocal(tx.transactionDate);
+    const key = formatYMD(date);
+    if (!groups[key]) {
+      groups[key] = []; 
+    }
+    groups[key].push(tx);
+    return groups;
+  }, {});
+
+  const formatDateLabel = (isoDate) => {
+    const date = new Date(isoDate);
+    return `${date.toLocaleString("en-US", { month: "long" }).toUpperCase()} ${date.getDate()}`;
+  };
+
+  const totalSpent = filteredTransactions
+    .filter((item) => item.debited)
+    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+  const totalReceived = filteredTransactions
+    .filter((item) => !item.debited)
+    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+  const dateRangeLabel =
+    selectedRange === "custom"
+      ? customStartDate && customEndDate
+        ? `${parseISODateLocal(customStartDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })} – ${parseISODateLocal(customEndDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`
+        : "Custom range"
+      : monthOptions.find((option) => option.value === selectedRange)?.label || "This month";
+
+  // Helper: apply picker selection to actual custom dates
+  const applyPickerRange = () => {
+    if (pickerStart) setCustomStartDate(formatYMD(pickerStart));
+    if (pickerEnd) setCustomEndDate(formatYMD(pickerEnd));
+    setPickerHover(null);
+    setCustomPickerOpen(false);
+    setSelectedRange("custom");
+  };
+
+  const cancelPicker = () => {
+    // close without changing current customStartDate/customEndDate
+    setPickerStart(customStartDate ? new Date(customStartDate) : null);
+    setPickerEnd(customEndDate ? new Date(customEndDate) : null);
+    setCustomPickerOpen(false);
+    setSelectedRange((prev) => (prev === "custom" && !customStartDate && !customEndDate ? recentMonths[0].value : prev));
+  };
+
+  // handle outside click and ESC to close popover
+  useEffect(() => {
+    if (!customPickerOpen) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") cancelPicker();
+    };
+    const onDoc = (e) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target)) {
+        cancelPicker();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onDoc);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onDoc);
+    };
+  }, [customPickerOpen]);
 
   if (isLoading) {
     return (
-      <div
-        className="container"
-        style={{ textAlign: "center", padding: "4rem" }}
-      >
-        <h2>Loading Expenses... ⏳</h2>
+      <div className="transactions-shell">
+        <nav className="transactions-nav">
+          <div className="transactions-nav-inner">
+            <Link to="/" className="dashboard-logo">
+              <span className="dashboard-logo-mark">B</span>
+              <span>BrokeBuddy</span>
+            </Link>
+          </div>
+        </nav>
+        <main className="transactions-page">
+          <div className="transactions-container">
+            <div className="transactions-loading-shell">
+              <div className="transactions-skeleton-line short" />
+              <div className="transactions-skeleton-line" />
+              <div className="transactions-skeleton-row" />
+              <div className="transactions-skeleton-row" />
+              <div className="transactions-skeleton-row" />
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div
-        className="container"
-        style={{ textAlign: "center", padding: "4rem", color: "#EF4444" }}
-      >
-        <h2>Failed to load data</h2>
-        <p>
-          Could not connect to the backend. Please ensure the Node.js server is
-          running.
-        </p>
-        <p>
-          <strong>Error:</strong> {error}
-        </p>
+      <div className="transactions-shell">
+        <nav className="transactions-nav">
+          <div className="transactions-nav-inner">
+            <Link to="/" className="dashboard-logo">
+              <span className="dashboard-logo-mark">B</span>
+              <span>BrokeBuddy</span>
+            </Link>
+          </div>
+        </nav>
+        <main className="transactions-page">
+          <div className="transactions-container">
+            <div className="transactions-empty-state is-error">
+              <h2>Couldn’t load transactions</h2>
+              <p>{error}</p>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="expenses-wrapper">
-      <nav className="nav">
-        <div className="container">
-          <div className="nav-content">
-            <Link to="/" className="logo">
-              ⚡ BrokeBuddy
-            </Link>
-            <div className="nav-links">
-              {/* <button className="btn btn-outline">📥 Export</button> */}
-              <button
-                onClick={() => setIsAddModalOpen(true)}
-                className="btn btn-primary"
-              >
-                ➕ Add Expense
-              </button>
-              <button
-                onClick={() => setIsSearchModalOpen(true)}
-                className="btn btn-primary"
-              >
-                🔍 Search
-              </button>
-            </div>
+    <div className="transactions-shell">
+      <nav className="transactions-nav">
+        <div className="transactions-nav-inner">
+          <Link to="/" className="dashboard-logo">
+            <span className="dashboard-logo-mark">B</span>
+            <span>BrokeBuddy</span>
+          </Link>
+          <div className="transactions-nav-actions">
+            <button className="transactions-secondary-btn" onClick={handleSyncTransactions} disabled={isSyncing}>
+              {isSyncing ? "Syncing..." : "Sync Gmail"}
+            </button>
+            <button className="transactions-primary-btn" onClick={() => setIsAddModalOpen(true)}>
+              + Add Transaction
+            </button>
           </div>
         </div>
       </nav>
-      <div className="expenses-page">
-        <div className="container">
-          <div className="page-header">
+
+      <main className="transactions-page">
+        <div className="transactions-container">
+          <header className="transactions-header">
             <div>
-              <h1>Expense Tracking</h1>
-              <p>
-                Import your online transactions directly from your Gmail. On the first
-                sync, you'll be asked for your bank's transaction sender email so only
-                relevant emails are scanned.
-              </p>
+              <p className="transactions-kicker">Transactions</p>
+              <h1>Transactions</h1>
+              <p className="transactions-subtitle">View and manage your income and expenses.</p>
             </div>
-            <div className="page-header-actions">
-              <button
-                onClick={handleSyncTransactions}
-                className="btn btn-primary"
-                disabled={isSyncing}
-              >
-                {isSyncing ? "Syncing..." : "🔄 Sync Transactions"}
+            <div className="transactions-header-actions">
+              <button className="transactions-secondary-btn" onClick={handleSyncTransactions} disabled={isSyncing}>
+                {isSyncing ? "Syncing..." : "Sync Gmail"}
+              </button>
+              <button className="transactions-primary-btn" onClick={() => setIsAddModalOpen(true)}>
+                + Add Transaction
               </button>
             </div>
-          </div>
+          </header>
 
-          <BankEmailModal
-            isOpen={isBankEmailModalOpen}
-            initialValue={bankSenderEmail}
-            title={pendingSyncAfterSave ? "Bank Sender Email" : "Edit Bank Sender Email"}
-            placeholder="alerts@hdfcbank.net"
-            onClose={() => {
-              setIsBankEmailModalOpen(false);
-              setPendingSyncAfterSave(false);
-            }}
-            onSave={(email) => handleSaveBankEmail(email, true)}
-            isSaving={isSavingBankEmail}
-          />
+            <div className="transactions-controls">
+            <div className="transactions-search-box">
+              <span className="transactions-search-icon">⌕</span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search transactions..."
+              />
+            </div>
 
-          {isNoTransactionsModalOpen && (
-            <div className="modal-overlay">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h2>No Transactions Found</h2>
-                  <button
-                    onClick={() => setIsNoTransactionsModalOpen(false)}
-                    className="modal-close-btn"
-                  >
-                    &times;
-                  </button>
-                </div>
-                <div className="modal-form">
-                  <p>
-                    We couldn't find any transaction emails from the configured sender email.
-                    Are you sure this is the correct sender email used by your bank?
-                  </p>
-                  <div className="form-actions">
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      onClick={handleConfirmNoTransactions}
-                    >
-                      Yes, it's correct
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-outline"
-                      onClick={handleEditSenderEmailFromDialog}
-                    >
-                      Change Sender Email
-                    </button>
+            <div className={`transactions-range-box ${selectedRange === "custom" && customStartDate && customEndDate ? 'has-custom' : ''}`}>
+              <select
+                value={selectedRange}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === "custom") {
+                    setSelectedRange("custom");
+                    setCustomPickerOpen(true);
+                    // reset picker state to previously selected custom range
+                    setPickerStart(customStartDate ? new Date(customStartDate) : null);
+                    setPickerEnd(customEndDate ? new Date(customEndDate) : null);
+                  } else {
+                    setSelectedRange(v);
+                    setCustomPickerOpen(false);
+                  }
+                }}
+                aria-label="Select date range"
+              >
+                {recentMonths.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+                <option value="custom">Custom range</option>
+              </select>
+              {selectedRange === "custom" && customStartDate && customEndDate && (
+                <span className="range-display">{dateRangeLabel}</span>
+              )}
+              {/* Clear button when a custom range is applied */}
+              {selectedRange === "custom" && customStartDate && customEndDate && (
+                <button
+                  type="button"
+                  className="range-clear-button"
+                  aria-label="Clear custom range"
+                  onClick={() => {
+                    setCustomStartDate("");
+                    setCustomEndDate("");
+                    setPickerStart(null);
+                    setPickerEnd(null);
+                    setPickerHover(null);
+                    setCustomPickerOpen(false);
+                    setSelectedRange(defaultMonthValue);
+                  }}
+                >
+                  ×
+                </button>
+              )}
+
+              {customPickerOpen && (
+                <div className="custom-picker-popover">
+                  <div className="custom-picker-card" ref={pickerRef}>
+                    {/* Minimal calendar: show current month with navigation */}
+                    <Calendar
+                      start={pickerStart}
+                      end={pickerEnd}
+                      hover={pickerHover}
+                      onDayClick={(d) => {
+                        if (!pickerStart || (pickerStart && pickerEnd)) {
+                          setPickerStart(d);
+                          setPickerEnd(null);
+                        } else if (pickerStart && !pickerEnd) {
+                          if (d < pickerStart) {
+                            setPickerEnd(pickerStart);
+                            setPickerStart(d);
+                          } else {
+                            setPickerEnd(d);
+                          }
+                        }
+                      }}
+                      onDayHover={(d) => setPickerHover(d)}
+                    />
+
+                    <div className="custom-picker-summary">
+                      <div><strong>Start:</strong> {pickerStart ? parseISODateLocal(formatYMD(pickerStart)).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—"}</div>
+                      <div><strong>End:</strong> {pickerEnd ? parseISODateLocal(formatYMD(pickerEnd)).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—"}</div>
+                    </div>
+
+                    <div className="custom-picker-actions">
+                      <button className="transactions-secondary-btn" onClick={cancelPicker}>Cancel</button>
+                      <button className="transactions-primary-btn" onClick={applyPickerRange} disabled={!pickerStart || !pickerEnd}>Apply</button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          )}
-
-          <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-header">
-                <span className="stat-title">Total Expenses</span>
-                <span style={{ fontSize: "20px" }}>💰</span>
-              </div>
-              <div className="stat-value">Rs{totalExpenses.toFixed(2)}</div>
-              <div className="stat-change">
-                <span style={{ color: "#EF4444" }}>📈</span> Debited this week
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-header">
-                <span className="stat-title">Total Credited</span>
-                <span style={{ fontSize: "20px" }}>🤑</span>
-              </div>
-              <div className="stat-value">Rs{totalCredited.toFixed(2)}</div>
-              <div className="stat-change">
-                <span style={{ color: "#10B981" }}>📈</span> Credited this week
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-header">
-                <span className="stat-title">Transactions</span>
-                <span style={{ fontSize: "20px" }}>📋</span>
-              </div>
-              <div className="stat-value">{transactionCount}</div>
-              <div className="stat-change">
-                <span style={{ color: "#10B981" }}>📉</span> -2 from last week
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-header">
-                <span className="stat-title">Categories</span>
-                <span style={{ fontSize: "20px" }}>🏷️</span>
-              </div>
-              <div className="stat-value">5</div>
-              <div className="stat-change">Active categories</div>
+              )}
             </div>
           </div>
 
-          {isSearchModalOpen && (
-            <div className="modal-overlay">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h2>Search Expenses</h2>
-                  <button
-                    onClick={() => setIsSearchModalOpen(false)}
-                    className="modal-close-btn"
-                  >
-                    &times;
+          { /* Custom range popover is anchored to the select; inputs removed in favor of calendar popover */ }
+
+          <div className="transactions-filters" aria-label="Transaction filters">
+            {FILTER_OPTIONS.map((filter) => (
+              <button
+                key={filter.value}
+                type="button"
+                className={`transactions-filter ${selectedFilter === filter.value ? "active" : ""}`}
+                onClick={() => setSelectedFilter(filter.value)}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="transactions-summary-line">
+            <span>{filteredTransactions.length} transactions</span>
+            <span>•</span>
+            <span>{formatCurrency(totalSpent)} spent</span>
+            <span>•</span>
+            <span>{formatCurrency(totalReceived)} received</span>
+          </div>
+
+          <div className="transactions-ledger">
+            {filteredTransactions.length === 0 ? (
+              <div className="transactions-empty-state">
+                <h3>No transactions found</h3>
+                <p>
+                  Try changing your date range or filters, or add a transaction manually.
+                </p>
+                <div className="transactions-empty-actions">
+                  <button className="transactions-primary-btn" onClick={() => setIsAddModalOpen(true)}>
+                    + Add Transaction
+                  </button>
+                  <button className="transactions-secondary-btn" onClick={handleSyncTransactions}>
+                    Sync Gmail
                   </button>
                 </div>
-                <div className="search-bar">
-                  <form onSubmit={handleSearch} className="search-form">
-                    <div className="form-group">
-                      <label>Start Date*</label>
-                      <br />
-                      <input
-                        type="date"
-                        value={searchStartDate}
-                        onChange={(e) => setSearchStartDate(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>End Date</label>
-                      <br />
-                      <input
-                        type="date"
-                        value={searchEndDate}
-                        onChange={(e) => setSearchEndDate(e.target.value)}
-                        min={searchStartDate}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>UPI / Nickname</label>
-                      <br />
-                      <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="e.g., PAYTM or Mom"
-                      />
-                    </div>
-                    <br />
-                    <div className="form-actions">
-                      <button type="submit" className="btn btn-primary">
-                        Search
-                      </button>{" "}
-                      <button
-                        type="button"
-                        onClick={() => setIsSearchModalOpen(false)}
-                        className="btn btn-outline"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
-                </div>
               </div>
-            </div>
-          )}
+            ) : (
+              Object.entries(groupedTransactions).map(([dayKey, items]) => (
+                <div key={dayKey} className="transactions-day-group">
+                  <div className="transactions-day-header">{formatDateLabel(dayKey)}</div>
+                  {items.map((transaction, txIndex) => {
+                    const merchant = transaction.merchant || "Unknown merchant";
+                    const category = transaction.category || "General";
+                    const source = transaction.source || "UPI";
+                    const amount = Number(transaction.amount || 0);
+                    const isExpense = !!transaction.debited;
+                    const signature = isExpense ? "-" : "+";
+                    const identifyingValue = transaction.upiId || transaction.merchant || "Manual";
+                    const menuKey = `${transaction.id}__${dayKey}__${txIndex}`;
 
-          {isAddModalOpen && (
-            <div className="modal-overlay">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h2>Add Manual Transaction</h2>
-                  <button
-                    onClick={() => setIsAddModalOpen(false)}
-                    className="modal-close-btn"
-                  >
-                    &times;
-                  </button>
-                </div>
-                <div className="add-expense-form-container">
-                  <form onSubmit={handleAddSubmit} className="add-expense-form">
-                    <div className="form-group">
-                      <label>Nickname / UPI ID*</label>
-                      <br />
-                      <input
-                        type="text"
-                        name="nicknameOrUpiId"
-                        value={newExpenseData.nicknameOrUpiId}
-                        onChange={handleAddFormChange}
-                        placeholder="Enter Nickname or UPI ID"
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Amount*</label>
-                      <br />
-                      <input
-                        type="number"
-                        name="amount"
-                        value={newExpenseData.amount}
-                        onChange={handleAddFormChange}
-                        placeholder="e.g., 50.00"
-                        required
-                        step="0.01"
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Date*</label>
-                      <br />
-                      <input
-                        type="date"
-                        name="date"
-                        value={newExpenseData.date}
-                        onChange={handleAddFormChange}
-                        required
-                      />
-                    </div>
-                    <br />
-                    <div className="form-group radio-group">
-                      <label>Type:</label>
-                      <div>
-                        <input
-                          type="radio"
-                          id="debitRadio"
-                          name="debited"
-                          value="true"
-                          checked={newExpenseData.debited === true}
-                          onChange={handleAddFormChange}
-                        />
-                        <label htmlFor="debitRadio">Debit (-)</label>
-                      </div>
-                      <div>
-                        <input
-                          type="radio"
-                          id="creditRadio"
-                          name="debited"
-                          value="false"
-                          checked={newExpenseData.debited === false}
-                          onChange={handleAddFormChange}
-                        />
-                        <label htmlFor="creditRadio">Credit (+)</label>
-                      </div>
-                    </div>
-                    <br />
-                    <div className="form-actions">
-                      <button type="submit" className="btn btn-primary">
-                        Save Transaction
-                      </button>{" "}
-                      <button
-                        type="button"
-                        onClick={() => setIsAddModalOpen(false)}
-                        className="btn btn-outline"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-          )}
+                    return (
+                      <div key={transaction.id} className="transaction-row">
+                        <div className="transaction-main">
+                          <div className="transaction-icon">{merchant.charAt(0).toUpperCase()}</div>
 
-          <div className="expenses-list">
-            <div className="expenses-header">
-              <div className="expenses-header-title">
-                <h2>{isSearchActive ? "Search Results" : "Recent Expenses"}</h2>
-                {isSearchActive && (
-                  <button
-                    onClick={handleClearSearch}
-                    className="btn btn-outline clear-search-btn"
-                  >
-                    Clear Search
-                  </button>
-                )}
-              </div>
-              <p style={{ color: "#ccc", margin: 0 }}>
-                {transactionCount} transactions found
-                {isSearchActive ? "" : " for the last 7 days"}
-              </p>
-            </div>
-            <div className="expenses-content">
-              {(() => {
-                // const reversedExpenses = [...expenses].reverse();
-
-                const transactionsToShow = showAll
-                  ? expenses
-                  : expenses.slice(0, 10);
-
-                return (
-                  <>
-                    {transactionsToShow.map((expense, index) => {
-                      const merchant = expense.merchant;
-                      const upi = expense.upiId;
-                      const nickname = upi ? nicknames[upi] : null;
-                      const isEditing = editingIndex === index;
-
-                      // Determine display lines and whether editing is allowed
-                      let titleLine = "";
-                      let subtitleLine = null;
-                      const editingAllowed = Boolean(upi);
-
-                      if (merchant && upi) {
-                        // Case A: merchant exists AND upiId exists
-                        titleLine = merchant;
-                        subtitleLine = upi;
-                      } else if (merchant && !upi) {
-                        // Case B: merchant exists AND upiId is null
-                        titleLine = merchant;
-                        subtitleLine = null;
-                      } else if (!merchant && nickname && upi) {
-                        // Case C: merchant is null AND nickname exists
-                        titleLine = nickname;
-                        subtitleLine = upi;
-                      } else if (!merchant && !nickname && upi) {
-                        // Case D: neither merchant nor nickname exists (but upi exists)
-                        titleLine = "Add a nickname...";
-                        subtitleLine = upi;
-                      } else {
-                        // Fallback: neither merchant nor upi present
-                        titleLine = "Add a nickname...";
-                        subtitleLine = null;
-                      }
-
-                      const formattedDate = new Date(
-                        expense.transactionDate
-                      ).toLocaleDateString("en-GB", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      });
-
-                      return (
-                        <div key={expense.id} className="expense-item">
-                          <div className="expense-left">
-                            <div className="expense-icon">📋</div>
-                            <div className="expense-details">
-                              {isEditing ? (
-                                <div>
-                                  <div className="nickname-edit-view">
-                                    <input
-                                      type="text"
-                                      className="nickname-input"
-                                      value={inlineInputValue}
-                                      onChange={(e) =>
-                                        setInlineInputValue(e.target.value)
-                                      }
-                                      placeholder="Enter a nickname..."
-                                      autoFocus
-                                    />
-                                    <button
-                                      onClick={() =>
-                                        handleSaveNickname(
-                                          expense.upiId,
-                                          index
-                                        )
-                                      }
-                                      className="edit-nickname-btn"
-                                      title="Save nickname"
-                                    >
-                                      💾
-                                    </button>
-                                  </div>
-                                  <p
-                                    className="expense-meta"
-                                    style={{ wordBreak: "break-all" }}
-                                  >
-                                    {subtitleLine || "Unknown"}
-                                  </p>
-                                </div>
-                              ) : (
-                                <div>
-                                  {/**
-                                   * Render titleLine as either a clickable placeholder
-                                   * or a static title. Only allow editing when a UPI ID
-                                   * exists (editingAllowed).
-                                   */}
-                                  {titleLine === "Add a nickname..." ? (
-                                    editingAllowed ? (
-                                      <div
-                                        className="nickname-placeholder"
-                                        onClick={() => handleStartEditing(index, "")}
-                                      >
-                                        {titleLine}
-                                      </div>
-                                    ) : (
-                                      <div className="nickname-placeholder" style={{ opacity: 0.6 }}>
-                                        {titleLine}
-                                      </div>
-                                    )
-                                  ) : (
-                                    <div
-                                      style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: "8px",
-                                      }}
-                                    >
-                                      <h4 style={{ margin: 0 }}>{titleLine}</h4>
-                                      {editingAllowed && (
-                                        <button
-                                          onClick={() =>
-                                            handleStartEditing(index, titleLine)
-                                          }
-                                          className="edit-nickname-btn"
-                                          title="Edit nickname"
-                                        >
-                                          ✏️
-                                        </button>
-                                      )}
-                                    </div>
-                                  )}
-                                  {subtitleLine && (
-                                    <p
-                                      className="expense-meta"
-                                      style={{ wordBreak: "break-all" }}
-                                    >
-                                      {subtitleLine}
-                                    </p>
-                                  )}
-                                </div>
-                              )}
-                              <div className="expense-meta">
-                                {formattedDate}
-                              </div>
+                          <div className="transaction-info">
+                            <div className="transaction-name-row">
+                              <span className="transaction-name">{merchant}</span>
                             </div>
-                          </div>
-                          <div className="expense-right">
-                            <div
-                              className={`expense-amount ${
-                                expense.debited ? "debited" : "credited"
-                              }`}
-                            >
-                              {typeof expense.amount === "number"
-                                ? `${
-                                    expense.debited ? "-" : "+"
-                                  }Rs${expense.amount.toFixed(2)}`
-                                : "Rs0.00"}
-                            </div>
-                            <div className="expense-right-bottom">
-                              <div className="expense-category">
-                                {expense.source === "MANUAL" ? "Manual" : "Online"}
-                              </div>
-                              {expense.source === "MANUAL" && (
-                                <button
-                                  onClick={() => handleDelete(expense.id)}
-                                  className="delete-btn"
-                                  title="Delete manual transaction"
-                                >
-                                  🗑️
-                                </button>
-                              )}
+                            <div className="transaction-meta-row">
+                              <span>{transaction.upiId || "Manual entry"}</span>
+                              <span className="meta-separator">•</span>
+                              <span>{category}</span>
+                              <span className="meta-separator">•</span>
+                              <span>{source}</span>
                             </div>
                           </div>
                         </div>
-                      );
-                    })}
 
-                    {expenses.length > 10 && (
-                      <div style={{ textAlign: "center", marginTop: "1.5rem" }}>
-                        <button
-                          onClick={() => setShowAll(!showAll)}
-                          className="btn btn-outline"
-                        >
-                          {showAll ? "Show Less" : "Show More"}
-                        </button>
+                        <div className="transaction-summary">
+                          <span className={`transaction-amount ${isExpense ? "expense" : "income"}`}>
+                            {signature}₹{amount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                          </span>
+                          <span className="transaction-date">
+                            {parseISODateLocal(transaction.transactionDate).toLocaleDateString("en-GB", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </span>
+                        </div>
+
+                        <div className="transaction-actions">
+                          <button
+                            className="transaction-menu-button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowMenuId(showMenuId === menuKey ? null : menuKey);
+                            }}
+                            aria-label="Open transaction actions"
+                          >
+                            ⋮
+                          </button>
+                          {showMenuId === menuKey && ( (transaction.source === "MANUAL") || transaction.upiId ) && (
+                            <div className="transaction-menu" onClick={(e) => e.stopPropagation()}>
+                              {transaction.source === "MANUAL" && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setShowMenuId(null);
+                                    handleDelete(transaction.id);
+                                  }}
+                                >
+                                  Delete
+                                </button>
+                              )}
+                              {transaction.upiId && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setShowMenuId(null);
+                                    handleStartEditing(transaction.id, transaction.merchant || "");
+                                  }}
+                                >
+                                  Edit nickname
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    )}
-                  </>
-                );
-              })()}
+                    );
+                  })}
+                </div>
+              ))
+            )}
+          </div>
+          {totalPages > 1 && (
+            <div className="transactions-pagination">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage <= 1}
+              >
+                Previous
+              </button>
+
+              <div className="transactions-pagination-pages">
+                {(() => {
+                  const pages = [];
+                  if (totalPages <= 7) {
+                    for (let i = 1; i <= totalPages; i++) pages.push(i);
+                  } else {
+                    // show first two, last two, and current ±1
+                    const set = new Set();
+                    set.add(1);
+                    set.add(2);
+                    set.add(totalPages - 1);
+                    set.add(totalPages);
+                    set.add(currentPage - 1);
+                    set.add(currentPage);
+                    set.add(currentPage + 1);
+                    const arr = Array.from(set).filter((n) => n >= 1 && n <= totalPages).sort((a, b) => a - b);
+                    let last = 0;
+                    arr.forEach((n) => {
+                      if (last && n - last > 1) pages.push("...");
+                      pages.push(n);
+                      last = n;
+                    });
+                  }
+
+                  return pages.map((p, idx) =>
+                    p === "..." ? (
+                      <span key={`e-${idx}`}>…</span>
+                    ) : (
+                      <button
+                        key={p}
+                        type="button"
+                        className={p === currentPage ? "active" : ""}
+                        onClick={() => setCurrentPage(p)}
+                      >
+                        {p}
+                      </button>
+                    )
+                  );
+                })()}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage >= totalPages}
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </div>
+      </main>
+
+      <BankEmailModal
+        isOpen={isBankEmailModalOpen}
+        initialValue={bankSenderEmail}
+        title={pendingSyncAfterSave ? "Bank Sender Email" : "Edit Bank Sender Email"}
+        placeholder="alerts@hdfcbank.net"
+        onClose={() => {
+          setIsBankEmailModalOpen(false);
+          setPendingSyncAfterSave(false);
+        }}
+        onSave={(email) => handleSaveBankEmail(email, true)}
+        isSaving={isSavingBankEmail}
+      />
+
+      {isNoTransactionsModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <div className="modal-header-row">
+              <h2>No Transactions Found</h2>
+              <button type="button" className="modal-close" onClick={() => setIsNoTransactionsModalOpen(false)}>
+                ×
+              </button>
+            </div>
+            <p>
+              We couldn’t find any transaction emails from the configured sender email. Are you sure this is the correct one?
+            </p>
+            <div className="modal-actions">
+              <button type="button" className="transactions-primary-btn" onClick={async () => {
+                setIsNoTransactionsModalOpen(false);
+                const verified = await verifyBankSenderEmail();
+                if (verified) toast.success("No transactions found. Your sender email has been confirmed.");
+              }}>
+                Yes, it’s correct
+              </button>
+              <button type="button" className="transactions-secondary-btn" onClick={async () => {
+                await fetchBankSenderEmail();
+                setIsNoTransactionsModalOpen(false);
+                setPendingSyncAfterSave(true);
+                setIsBankEmailModalOpen(true);
+              }}>
+                Change sender email
+              </button>
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {isSearchModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-card modal-card--wide">
+            <div className="modal-header-row">
+              <h2>Search transactions</h2>
+              <button type="button" className="modal-close" onClick={() => setIsSearchModalOpen(false)}>
+                ×
+              </button>
+            </div>
+            <form onSubmit={handleSearch} className="transactions-search-form">
+              <div className="form-grid">
+                <label>
+                  <span>Start date</span>
+                  <input type="date" value={searchStartDate} onChange={(e) => setSearchStartDate(e.target.value)} />
+                </label>
+                <label>
+                  <span>End date</span>
+                  <input type="date" value={searchEndDate} onChange={(e) => setSearchEndDate(e.target.value)} min={searchStartDate} />
+                </label>
+                <label className="form-full">
+                  <span>UPI / merchant / notes</span>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="e.g. Swiggy or UPI ID"
+                  />
+                </label>
+              </div>
+              <div className="modal-actions">
+                <button type="submit" className="transactions-primary-btn">Search</button>
+                <button type="button" className="transactions-secondary-btn" onClick={() => setIsSearchModalOpen(false)}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isAddModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-card modal-card--wide">
+            <div className="modal-header-row">
+              <h2>Add Transaction</h2>
+              <button type="button" className="modal-close" onClick={() => setIsAddModalOpen(false)}>
+                ×
+              </button>
+            </div>
+            <form onSubmit={handleAddSubmit} className="transactions-search-form">
+              <div className="form-grid">
+                <label className="form-full">
+                  <span>Nickname / UPI ID</span>
+                  <input
+                    type="text"
+                    name="nicknameOrUpiId"
+                    value={newExpenseData.nicknameOrUpiId}
+                    onChange={handleAddFormChange}
+                    placeholder="Enter nickname or UPI ID"
+                    required
+                  />
+                </label>
+                <label>
+                  <span>Amount</span>
+                  <input
+                    type="number"
+                    name="amount"
+                    value={newExpenseData.amount}
+                    onChange={handleAddFormChange}
+                    placeholder="0.00"
+                    step="0.01"
+                    required
+                  />
+                </label>
+                <label>
+                  <span>Date</span>
+                  <input type="date" name="date" value={newExpenseData.date} onChange={handleAddFormChange} required />
+                </label>
+                <div className="form-full form-radio-wrap">
+                  <span>Type</span>
+                  <div className="radio-row">
+                    <label>
+                      <input
+                        type="radio"
+                        name="debited"
+                        value="true"
+                        checked={newExpenseData.debited === true}
+                        onChange={handleAddFormChange}
+                      />
+                      Debit (-)
+                    </label>
+                    <label>
+                      <input
+                        type="radio"
+                        name="debited"
+                        value="false"
+                        checked={newExpenseData.debited === false}
+                        onChange={handleAddFormChange}
+                      />
+                      Credit (+)
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div className="modal-actions">
+                <button type="submit" className="transactions-primary-btn">Save Transaction</button>
+                <button type="button" className="transactions-secondary-btn" onClick={() => setIsAddModalOpen(false)}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
