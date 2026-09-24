@@ -8,11 +8,19 @@ export default function LegalPage({ title, lastUpdated = "July 2026", sections }
   const location = useLocation();
   const navigate = useNavigate();
 
-  const handleGoogleLogin = () => {
-    if (typeof window !== "undefined") {
-      window.__BROKEBUDDY_DEV_MODE__ = true;
+  const handleGoogleLogin = (e) => {
+    if (e && typeof e.preventDefault === "function") e.preventDefault();
+
+    if (isDevMode()) {
+      if (typeof window !== "undefined") window.__BROKEBUDDY_DEV_MODE__ = true;
+      navigate("/dashboard");
+      return;
     }
-    navigate("/dashboard");
+
+    const base = typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_API_URL
+      ? import.meta.env.VITE_API_URL
+      : `${window.location.protocol}//${window.location.hostname}:4000`;
+    window.location.href = `${base.replace(/\/$/, "")}/api/auth/google`;
   };
 
   useEffect(() => {
