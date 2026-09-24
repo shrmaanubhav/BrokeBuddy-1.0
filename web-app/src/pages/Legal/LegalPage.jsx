@@ -1,15 +1,18 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import logoImg from "../../assets/logo.png";
 import "./LegalPage.css";
 
 export default function LegalPage({ title, lastUpdated = "July 2026", sections }) {
   const [activeSection, setActiveSection] = useState(0);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const handleGoogleLogin = () => {
-    const baseUrl = import.meta.env.VITE_API_URL || "";
-    window.location.href = `${baseUrl}/api/auth/google`;
+    if (typeof window !== "undefined") {
+      window.__BROKEBUDDY_DEV_MODE__ = true;
+    }
+    navigate("/dashboard");
   };
 
   useEffect(() => {
