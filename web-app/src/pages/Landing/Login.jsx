@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
+import { isDevMode } from "../../dev/mockMode";
 import {
   ArrowRight,
   BarChart3,
@@ -57,11 +58,22 @@ const productFeatures = [
 const Login = () => {
   const navigate = useNavigate();
 
-  const handleGoogleLogin = () => {
-    if (typeof window !== "undefined") {
-      window.__BROKEBUDDY_DEV_MODE__ = true;
+  const handleGoogleLogin = (e) => {
+    if (e && typeof e.preventDefault === "function") e.preventDefault();
+
+    if (isDevMode()) {
+      if (typeof window !== "undefined") {
+        window.__BROKEBUDDY_DEV_MODE__ = true;
+      }
+      navigate("/dashboard");
+      return;
     }
-    navigate("/dashboard");
+
+    const base = typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_API_URL
+      ? import.meta.env.VITE_API_URL
+      : `${window.location.protocol}//${window.location.hostname}:4000`;
+    const url = `${base.replace(/\/$/, "")}/api/auth/google`;
+    window.location.href = url;
   };
 
   return (
