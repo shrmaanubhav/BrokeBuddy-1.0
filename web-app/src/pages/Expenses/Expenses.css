@@ -564,6 +564,36 @@ select {
   text-overflow: ellipsis;
 }
 
+.nickname-edit-button {
+  margin-left: 8px;
+  background: transparent;
+  border: none;
+  color: var(--bb-text-soft);
+  cursor: pointer;
+  font-size: 0.92rem;
+  padding: 4px;
+  border-radius: 8px;
+}
+.nickname-edit-button:hover,
+.nickname-edit-button:focus {
+  color: var(--bb-text);
+  background: rgba(148,163,184,0.04);
+}
+
+.transaction-delete-button {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--bb-border);
+  background: rgba(15, 23, 42, 0.8);
+  color: var(--bb-text-soft);
+  cursor: pointer;
+}
+.transaction-delete-button:hover {
+  color: var(--bb-text);
+  transform: translateY(-1px);
+}
+
 .transaction-meta-row {
   display: flex;
   flex-wrap: wrap;
@@ -617,39 +647,7 @@ select {
 }
 
 .transaction-menu-button {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  border: 1px solid var(--bb-border);
-  background: rgba(15, 23, 42, 0.8);
-  color: var(--bb-text-soft);
-  cursor: pointer;
-}
-
-.transaction-menu {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 0.45rem);
-  z-index: 10;
-  min-width: 150px;
-  border-radius: 12px;
-  padding: 0.35rem;
-  box-shadow: var(--bb-shadow);
-}
-
-.transaction-menu button {
-  width: 100%;
-  border: none;
-  background: transparent;
-  color: var(--bb-text-soft);
-  text-align: left;
-  padding: 0.7rem 0.8rem;
-  cursor: pointer;
-}
-
-.transaction-menu button:hover {
-  background: rgba(148, 163, 184, 0.08);
-  color: var(--bb-text);
+  display: none; /* removed: three-dot menu not used anymore */
 }
 
 .transactions-pagination {

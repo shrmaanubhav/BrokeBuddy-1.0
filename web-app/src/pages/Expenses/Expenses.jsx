@@ -210,7 +210,7 @@ const ExpensesPage = () => {
   const [selectedRange, setSelectedRange] = useState(defaultMonthValue);
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
-  const [showMenuId, setShowMenuId] = useState(null);
+  // removed showMenuId/menu state - using direct inline actions instead
   const [currentPage, setCurrentPage] = useState(1);
   const [customPickerOpen, setCustomPickerOpen] = useState(false);
   const [pickerStart, setPickerStart] = useState(null);
@@ -225,16 +225,7 @@ const ExpensesPage = () => {
 
   // (removed duplicate page-sync effect to keep single source of truth for currentPage)
 
-  // Close transaction menus when clicking outside
-  useEffect(() => {
-    const handler = (e) => {
-      if (!e.target.closest || !e.target.closest(".transaction-actions")) {
-        setShowMenuId(null);
-      }
-    };
-    document.addEventListener("click", handler);
-    return () => document.removeEventListener("click", handler);
-  }, []);
+  // no outside-click menu handling needed after removing three-dot menus
 
   const fetchBankSenderEmail = async () => {
     try {
@@ -484,7 +475,7 @@ const ExpensesPage = () => {
   };
 
   const handleStartEditing = (index, currentNickname) => {
-    setEditingIndex(index);
+    // legacy - not used; use openNicknameEditor instead
     setInlineInputValue(currentNickname || "");
   };
 
@@ -499,19 +490,33 @@ const ExpensesPage = () => {
     }
 
     setNicknames(updatedNicknames);
-    setEditingIndex(null);
+    // close modal if open
+    setIsNicknameModalOpen(false);
+    setEditingUpiId(null);
 
     try {
       await api.post("/api/nicknames", {
         upiId,
         nickname: trimmedNickname,
       });
+      // apply nickname immediately to displayed nicknames state
+      setNicknames((prev) => ({ ...prev, [upiId]: trimmedNickname }));
     } catch (err) {
       console.error("Failed to save nickname:", err);
       toast.error(
         err.response?.data?.message || err.message || "Failed to save nickname"
       );
     }
+  };
+
+  const [editingUpiId, setEditingUpiId] = useState(null);
+  const [isNicknameModalOpen, setIsNicknameModalOpen] = useState(false);
+
+  const openNicknameEditor = (upiId, merchant) => {
+    if (!upiId) return;
+    setEditingUpiId(upiId);
+    setInlineInputValue(nicknames[upiId] || merchant || "");
+    setIsNicknameModalOpen(true);
   };
 
   const handleAddFormChange = (e) => {
@@ -1017,6 +1022,19 @@ const ExpensesPage = () => {
                           <div className="transaction-info">
                             <div className="transaction-name-row">
                               <span className="transaction-name">{merchant}</span>
+                              {transaction.upiId && (
+                                <button
+                                  type="button"
+                                  className="nickname-edit-button"
+                                  aria-label="Edit nickname"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openNicknameEditor(transaction.upiId, transaction.merchant || "");
+                                  }}
+                                >
+                                  ✎
+                                </button>
+                              )}
                             </div>
                             <div className="transaction-meta-row">
                               <span>{transaction.upiId || "Manual entry"}</span>
@@ -1041,41 +1059,18 @@ const ExpensesPage = () => {
                         </div>
 
                         <div className="transaction-actions">
-                          <button
-                            className="transaction-menu-button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setShowMenuId(showMenuId === menuKey ? null : menuKey);
-                            }}
-                            aria-label="Open transaction actions"
-                          >
-                            ⋮
-                          </button>
-                          {showMenuId === menuKey && ( (transaction.source === "MANUAL") || transaction.upiId ) && (
-                            <div className="transaction-menu" onClick={(e) => e.stopPropagation()}>
-                              {transaction.source === "MANUAL" && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setShowMenuId(null);
-                                    handleDelete(transaction.id);
-                                  }}
-                                >
-                                  Delete
-                                </button>
-                              )}
-                              {transaction.upiId && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setShowMenuId(null);
-                                    handleStartEditing(transaction.id, transaction.merchant || "");
-                                  }}
-                                >
-                                  Edit nickname
-                                </button>
-                              )}
-                            </div>
+                          {transaction.source === "MANUAL" && (
+                            <button
+                              type="button"
+                              className="transaction-delete-button"
+                              aria-label="Delete transaction"
+                              onClick={() => {
+                                if (!window.confirm("Are you sure you want to delete this manual transaction?")) return;
+                                handleDelete(transaction.id);
+                              }}
+                            >
+                              🗑
+                            </button>
                           )}
                         </div>
                       </div>
@@ -1308,6 +1303,28 @@ const ExpensesPage = () => {
           </div>
         </div>
       )}
+        {isNicknameModalOpen && (
+          <div className="modal-overlay">
+            <div className="modal-card">
+              <div className="modal-header-row">
+                <h2>Edit Nickname</h2>
+                <button type="button" className="modal-close" onClick={() => { setIsNicknameModalOpen(false); setEditingUpiId(null); }}>
+                  ×
+                </button>
+              </div>
+              <div className="form-grid">
+                <label className="form-full">
+                  <span>Nickname</span>
+                  <input type="text" value={inlineInputValue} onChange={(e) => setInlineInputValue(e.target.value)} />
+                </label>
+              </div>
+              <div className="modal-actions">
+                <button className="transactions-secondary-btn" onClick={() => { setIsNicknameModalOpen(false); setEditingUpiId(null); }}>Cancel</button>
+                <button className="transactions-primary-btn" onClick={async () => { await handleSaveNickname(editingUpiId); }}>Save</button>
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   );
 };
