@@ -481,30 +481,34 @@ const ExpensesPage = () => {
 
   const handleSaveNickname = async (upiId) => {
     const trimmedNickname = inlineInputValue.trim();
-    const updatedNicknames = { ...nicknames };
-
-    if (trimmedNickname) {
-      updatedNicknames[upiId] = trimmedNickname;
-    } else {
-      delete updatedNicknames[upiId];
-    }
-
-    setNicknames(updatedNicknames);
-    // close modal if open
-    setIsNicknameModalOpen(false);
-    setEditingUpiId(null);
 
     try {
       await api.post("/api/nicknames", {
         upiId,
         nickname: trimmedNickname,
       });
-      // apply nickname immediately to displayed nicknames state
-      setNicknames((prev) => ({ ...prev, [upiId]: trimmedNickname }));
+
+      setNicknames((prev) => {
+        const updated = { ...prev };
+
+        if (trimmedNickname) {
+          updated[upiId] = trimmedNickname;
+        } else {
+          delete updated[upiId];
+        }
+
+        return updated;
+      });
+
+      setIsNicknameModalOpen(false);
+      setEditingUpiId(null);
     } catch (err) {
       console.error("Failed to save nickname:", err);
+
       toast.error(
-        err.response?.data?.message || err.message || "Failed to save nickname"
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to save nickname"
       );
     }
   };
@@ -1005,7 +1009,10 @@ const ExpensesPage = () => {
                 <div key={dayKey} className="transactions-day-group">
                   <div className="transactions-day-header">{formatDateLabel(dayKey)}</div>
                   {items.map((transaction, txIndex) => {
-                    const merchant = transaction.merchant || "Unknown merchant";
+                    const displayName =
+                      transaction.upiId && nicknames?.[transaction.upiId]
+                        ? nicknames[transaction.upiId]
+                        : transaction.merchant || "Unknown merchant";
                     const category = transaction.category || "General";
                     const source = transaction.source || "UPI";
                     const amount = Number(transaction.amount || 0);
@@ -1017,11 +1024,10 @@ const ExpensesPage = () => {
                     return (
                       <div key={transaction.id} className="transaction-row">
                         <div className="transaction-main">
-                          <div className="transaction-icon">{merchant.charAt(0).toUpperCase()}</div>
-
+                          <div className="transaction-icon">{displayName.charAt(0).toUpperCase()}</div>
                           <div className="transaction-info">
                             <div className="transaction-name-row">
-                              <span className="transaction-name">{merchant}</span>
+                              <span className="transaction-name">{displayName}</span>
                               {transaction.upiId && (
                                 <button
                                   type="button"
