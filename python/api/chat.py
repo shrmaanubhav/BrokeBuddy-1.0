@@ -11,6 +11,7 @@ class QueryReq(BaseModel):
     query: str
     transactions: list = []
     budgets: list = []
+    context: dict | None = None
 
 
 @router.post("/chat")
@@ -53,6 +54,7 @@ async def bot(req: QueryReq):
         df,
         req.query,
         budgets_df,
+        context=req.context,
     )
 
     return {"response": resp}
