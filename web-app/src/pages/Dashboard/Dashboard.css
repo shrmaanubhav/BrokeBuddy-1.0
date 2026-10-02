@@ -31,6 +31,10 @@
   font-family: "Plus Jakarta Sans", "Inter", sans-serif;
 }
 
+.dashboard-nav {
+  display: none !important;
+}
+
 .dashboard-container {
   max-width: 1400px;
   width: 94%;

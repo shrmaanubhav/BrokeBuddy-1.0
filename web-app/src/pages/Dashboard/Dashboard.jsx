@@ -354,8 +354,8 @@ const Dashboard = ({ setIsAuthenticated }) => {
 
           <div className="dashboard-overview-actions">
             <div className="dashboard-month-chip">{currentMonthLabel}</div>
-            <button className="dashboard-action-btn" onClick={() => navigate("/expenses")}>Sync Gmail</button>
-            <button className="dashboard-action-btn primary" onClick={() => navigate("/expenses")}>+ Transaction</button>
+            <button className="dashboard-action-btn primary" onClick={() => navigate("/expenses")}>Sync Gmail</button>
+            {/* <button className="dashboard-action-btn primary" onClick={() => navigate("/expenses")}>+ Transaction</button> */}
           </div>
         </section>
 
