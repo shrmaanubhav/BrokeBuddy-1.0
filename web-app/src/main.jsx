@@ -2,7 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./app/App";
 
-const DEV_MODE = true;
+const DEV_MODE = false; // Set to true to enable development mode features
 
 if (typeof window !== "undefined") {
   window.__BROKEBUDDY_DEV_MODE__ = DEV_MODE;
