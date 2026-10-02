@@ -3,6 +3,7 @@ from typing import Any, Dict, TypedDict
 
 class ChatState(TypedDict):
     query: str
+    context: dict | None
     action: str | None
     response: str | None
     merchant: str | None
@@ -16,6 +17,7 @@ class ChatState(TypedDict):
 def default_state() -> ChatState:
     return {
         "query": "",
+        "context": None,
         "action": None,
         "response": None,
         "merchant": None,

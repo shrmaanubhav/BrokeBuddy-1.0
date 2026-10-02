@@ -52,9 +52,11 @@ class ChatBot:
         expense_df,
         query,
         budget_df=None,
+        context=None,
     ):
         self.reset_state()
         self.state["query"] = query
+        self.state["context"] = context
 
         graph = build_graph(
             self,

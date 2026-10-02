@@ -2,7 +2,7 @@ import * as chatService from "../services/chat.service.js";
 
 export const chat = async (req, res) => {
   try {
-    const { query } = req.body;
+    const { query, context } = req.body;
 
     if (!query?.trim()) {
       return res.status(400).json({
@@ -12,7 +12,8 @@ export const chat = async (req, res) => {
 
     const response = await chatService.chat(
       req.user.id,
-      query.trim()
+      query.trim(),
+      context
     );
 
     return res.json(response);

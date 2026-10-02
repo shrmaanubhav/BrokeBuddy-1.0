@@ -191,11 +191,68 @@ const ExpensesPage = () => {
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newExpenseData, setNewExpenseData] = useState({
-    nicknameOrUpiId: "",
+    merchant: "",
     amount: "",
     debited: true,
-    date: "",
+    transactionDate: "",
+    category: "DINING",
+    notes: "",
   });
+  const [formErrors, setFormErrors] = useState({});
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const datePickerRef = useRef(null);
+
+  const formatDateForDisplay = (isoDate) => {
+    if (!isoDate) return "";
+    const date = new Date(`${isoDate}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return "";
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  const parseDisplayDate = (displayValue) => {
+    if (!displayValue) return "";
+    const trimmed = displayValue.trim();
+    const match = trimmed.match(/^\d{2}\/\d{2}\/\d{4}$/);
+    if (!match) return "";
+
+    const [day, month, year] = trimmed.split("/").map(Number);
+    if (!day || !month || !year) return "";
+
+    const date = new Date(year, month - 1, day);
+    if (
+      date.getFullYear() !== year ||
+      date.getMonth() !== month - 1 ||
+      date.getDate() !== day
+    ) {
+      return "";
+    }
+
+    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  };
+
+  const formatDateForInput = (date) => {
+    if (!date) return "";
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  useEffect(() => {
+    if (!isDatePickerOpen) return;
+
+    const handleClickOutside = (event) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
+        setIsDatePickerOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isDatePickerOpen]);
   const [bankSenderEmail, setBankSenderEmail] = useState("");
   const [bankSenderVerified, setBankSenderVerified] = useState(false);
   const [isBankEmailModalOpen, setIsBankEmailModalOpen] = useState(false);
@@ -481,30 +538,34 @@ const ExpensesPage = () => {
 
   const handleSaveNickname = async (upiId) => {
     const trimmedNickname = inlineInputValue.trim();
-    const updatedNicknames = { ...nicknames };
-
-    if (trimmedNickname) {
-      updatedNicknames[upiId] = trimmedNickname;
-    } else {
-      delete updatedNicknames[upiId];
-    }
-
-    setNicknames(updatedNicknames);
-    // close modal if open
-    setIsNicknameModalOpen(false);
-    setEditingUpiId(null);
 
     try {
       await api.post("/api/nicknames", {
         upiId,
         nickname: trimmedNickname,
       });
-      // apply nickname immediately to displayed nicknames state
-      setNicknames((prev) => ({ ...prev, [upiId]: trimmedNickname }));
+
+      setNicknames((prev) => {
+        const updated = { ...prev };
+
+        if (trimmedNickname) {
+          updated[upiId] = trimmedNickname;
+        } else {
+          delete updated[upiId];
+        }
+
+        return updated;
+      });
+
+      setIsNicknameModalOpen(false);
+      setEditingUpiId(null);
     } catch (err) {
       console.error("Failed to save nickname:", err);
+
       toast.error(
-        err.response?.data?.message || err.message || "Failed to save nickname"
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to save nickname"
       );
     }
   };
@@ -521,45 +582,56 @@ const ExpensesPage = () => {
 
   const handleAddFormChange = (e) => {
     const { name, value } = e.target;
-    if (name === "debited") {
-      setNewExpenseData((prevData) => ({
-        ...prevData,
-        debited: value === "true",
-      }));
-    } else {
-      setNewExpenseData((prevData) => ({
-        ...prevData,
-        [name]: value,
-      }));
+    setNewExpenseData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+    setFormErrors((prev) => ({ ...prev, [name]: "" }));
+  };
+
+  const validateNewTransaction = () => {
+    const errors = {};
+
+    if (!newExpenseData.amount || Number(newExpenseData.amount) <= 0) {
+      errors.amount = "Amount must be greater than 0.";
     }
+
+    if (!newExpenseData.merchant || !newExpenseData.merchant.trim()) {
+      errors.merchant = "Merchant is required.";
+    }
+
+    if (!newExpenseData.category) {
+      errors.category = "Category is required.";
+    }
+
+    if (!newExpenseData.transactionDate) {
+      errors.transactionDate = "Date is required.";
+    }
+
+    return errors;
   };
 
   const handleAddSubmit = async (e) => {
     e.preventDefault();
 
-    if (
-      !newExpenseData.nicknameOrUpiId ||
-      !newExpenseData.amount ||
-      !newExpenseData.date
-    ) {
-      toast.error("Please fill in all required fields.");
+    const validationErrors = validateNewTransaction();
+    if (Object.keys(validationErrors).length > 0) {
+      setFormErrors(validationErrors);
+      toast.error("Please fix the highlighted fields.");
       return;
     }
-
-    const input = newExpenseData.nicknameOrUpiId.trim();
-    const nicknameMatch = Object.entries(nicknames).find(
-      ([, nickname]) => nickname.toLowerCase() === input.toLowerCase()
-    );
 
     setIsLoading(true);
     setError(null);
 
     const payload = {
-      merchant: input,
-      upiId: nicknameMatch ? nicknameMatch[0] : null,
+      source: "MANUAL",
+      merchant: newExpenseData.merchant.trim(),
       amount: Number(newExpenseData.amount),
       debited: newExpenseData.debited,
-      transactionDate: newExpenseData.date,
+      transactionDate: newExpenseData.transactionDate,
+      category: newExpenseData.category,
+      notes: newExpenseData.notes.trim() || undefined,
     };
 
     try {
@@ -567,11 +639,14 @@ const ExpensesPage = () => {
       toast.success("Transaction added successfully");
       setIsAddModalOpen(false);
       setNewExpenseData({
-        nicknameOrUpiId: "",
+        merchant: "",
         amount: "",
         debited: true,
-        date: "",
+        transactionDate: "",
+        category: "DINING",
+        notes: "",
       });
+      setFormErrors({});
       refreshTransactions();
     } catch (err) {
       console.error("Failed to add transaction:", err);
@@ -1005,7 +1080,10 @@ const ExpensesPage = () => {
                 <div key={dayKey} className="transactions-day-group">
                   <div className="transactions-day-header">{formatDateLabel(dayKey)}</div>
                   {items.map((transaction, txIndex) => {
-                    const merchant = transaction.merchant || "Unknown merchant";
+                    const displayName =
+                      transaction.upiId && nicknames?.[transaction.upiId]
+                        ? nicknames[transaction.upiId]
+                        : transaction.merchant || "Unknown merchant";
                     const category = transaction.category || "General";
                     const source = transaction.source || "UPI";
                     const amount = Number(transaction.amount || 0);
@@ -1017,11 +1095,10 @@ const ExpensesPage = () => {
                     return (
                       <div key={transaction.id} className="transaction-row">
                         <div className="transaction-main">
-                          <div className="transaction-icon">{merchant.charAt(0).toUpperCase()}</div>
-
+                          <div className="transaction-icon">{displayName.charAt(0).toUpperCase()}</div>
                           <div className="transaction-info">
                             <div className="transaction-name-row">
-                              <span className="transaction-name">{merchant}</span>
+                              <span className="transaction-name">{displayName}</span>
                               {transaction.upiId && (
                                 <button
                                   type="button"
@@ -1231,73 +1308,159 @@ const ExpensesPage = () => {
 
       {isAddModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-card modal-card--wide">
+          <div className="modal-card add-transaction-card">
             <div className="modal-header-row">
               <h2>Add Transaction</h2>
               <button type="button" className="modal-close" onClick={() => setIsAddModalOpen(false)}>
                 ×
               </button>
             </div>
-            <form onSubmit={handleAddSubmit} className="transactions-search-form">
-              <div className="form-grid">
-                <label className="form-full">
-                  <span>Nickname / UPI ID</span>
+
+            <form onSubmit={handleAddSubmit} className="add-transaction-form">
+              <div className="field-group form-full">
+                <label className="field-label">Transaction type</label>
+                <div className="transaction-type-toggle" role="tablist" aria-label="Transaction type">
+                  <button
+                    type="button"
+                    className={`type-option ${newExpenseData.debited ? "active" : ""}`}
+                    onClick={() => setNewExpenseData((prev) => ({ ...prev, debited: true }))}
+                  >
+                    Expense (-)
+                  </button>
+                  <button
+                    type="button"
+                    className={`type-option ${!newExpenseData.debited ? "active" : ""}`}
+                    onClick={() => setNewExpenseData((prev) => ({ ...prev, debited: false }))}
+                  >
+                    Income (+)
+                  </button>
+                </div>
+              </div>
+
+              <div className="field-group form-full">
+                <label className="field-label" htmlFor="transaction-amount">Amount</label>
+                <div className={`amount-input-wrap ${formErrors.amount ? "has-error" : ""}`}>
+                  <span className="currency-prefix">₹</span>
                   <input
-                    type="text"
-                    name="nicknameOrUpiId"
-                    value={newExpenseData.nicknameOrUpiId}
-                    onChange={handleAddFormChange}
-                    placeholder="Enter nickname or UPI ID"
-                    required
-                  />
-                </label>
-                <label>
-                  <span>Amount</span>
-                  <input
+                    id="transaction-amount"
                     type="number"
                     name="amount"
                     value={newExpenseData.amount}
                     onChange={handleAddFormChange}
-                    placeholder="0.00"
+                    placeholder="1,250.00"
                     step="0.01"
-                    required
+                    min="0.01"
                   />
-                </label>
-                <label>
-                  <span>Date</span>
-                  <input type="date" name="date" value={newExpenseData.date} onChange={handleAddFormChange} required />
-                </label>
-                <div className="form-full form-radio-wrap">
-                  <span>Type</span>
-                  <div className="radio-row">
-                    <label>
-                      <input
-                        type="radio"
-                        name="debited"
-                        value="true"
-                        checked={newExpenseData.debited === true}
-                        onChange={handleAddFormChange}
-                      />
-                      Debit (-)
-                    </label>
-                    <label>
-                      <input
-                        type="radio"
-                        name="debited"
-                        value="false"
-                        checked={newExpenseData.debited === false}
-                        onChange={handleAddFormChange}
-                      />
-                      Credit (+)
-                    </label>
-                  </div>
                 </div>
+                {formErrors.amount && <span className="field-error">{formErrors.amount}</span>}
               </div>
-              <div className="modal-actions">
-                <button type="submit" className="transactions-primary-btn">Save Transaction</button>
+
+              <div className="field-group form-full">
+                <label className="field-label" htmlFor="transaction-merchant">
+                  {newExpenseData.debited ? "Paid to " : "Received from"}
+                </label>
+                <input
+                  id="transaction-merchant"
+                  type="text"
+                  name="merchant"
+                  value={newExpenseData.merchant}
+                  onChange={handleAddFormChange}
+                  placeholder="Enter name or UPI ID"
+                  className={formErrors.merchant ? "field-input has-error" : "field-input"}
+                />
+                {formErrors.merchant && <span className="field-error">{formErrors.merchant}</span>}
+              </div>
+
+              <div className="field-group form-full">
+                <label className="field-label" htmlFor="transaction-category">Category</label>
+                <select
+                  id="transaction-category"
+                  name="category"
+                  value={newExpenseData.category}
+                  onChange={handleAddFormChange}
+                  className={formErrors.category ? "field-input select-input has-error" : "field-input select-input"}
+                >
+                  <option value="DINING">DINING</option>
+                  <option value="TRAVEL">TRAVEL</option>
+                  <option value="SHOPPING">SHOPPING</option>
+                  <option value="BILLS">BILLS</option>
+                  <option value="SUBSCRIPTIONS">SUBSCRIPTIONS</option>
+                  <option value="OTHER">OTHER</option>
+                </select>
+                {formErrors.category && <span className="field-error">{formErrors.category}</span>}
+              </div>
+
+              <div className="field-group form-full">
+                <label className="field-label" htmlFor="transaction-date">Date</label>
+                <div className={formErrors.transactionDate ? "date-field-shell has-error" : "date-field-shell"} ref={datePickerRef}>
+                  <input
+                    id="transaction-date"
+                    type="text"
+                    name="transactionDate"
+                    value={formatDateForDisplay(newExpenseData.transactionDate)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const nextIso = parseDisplayDate(value);
+                      setNewExpenseData((prev) => ({ ...prev, transactionDate: nextIso }));
+                      setFormErrors((prev) => ({ ...prev, transactionDate: "" }));
+                    }}
+                    onFocus={() => setIsDatePickerOpen(true)}
+                    onClick={() => setIsDatePickerOpen(true)}
+                    placeholder="DD/MM/YYYY"
+                    className="field-input date-display-input"
+                    inputMode="numeric"
+                    autoComplete="off"
+                  />
+                  <button
+                    type="button"
+                    className="date-picker-trigger"
+                    aria-label="Open date picker"
+                    onClick={() => setIsDatePickerOpen((prev) => !prev)}
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M7 2h2v2h6V2h2v2h3a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3V2Zm13 8H4v9h16v-9ZM4 8h16V6H4v2Z" />
+                    </svg>
+                  </button>
+
+                  {isDatePickerOpen && (
+                    <div className="custom-picker-popover date-picker-popover">
+                      <div className="custom-picker-card">
+                        <Calendar
+                          start={newExpenseData.transactionDate ? new Date(`${newExpenseData.transactionDate}T00:00:00`) : null}
+                          end={null}
+                          hover={null}
+                          onDayClick={(day) => {
+                            setNewExpenseData((prev) => ({ ...prev, transactionDate: formatDateForInput(day) }));
+                            setFormErrors((prev) => ({ ...prev, transactionDate: "" }));
+                            setIsDatePickerOpen(false);
+                          }}
+                          onDayHover={() => null}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {formErrors.transactionDate && <span className="field-error">{formErrors.transactionDate}</span>}
+              </div>
+
+              <div className="field-group form-full">
+                <label className="field-label" htmlFor="transaction-notes">Note (optional)</label>
+                <textarea
+                  id="transaction-notes"
+                  name="notes"
+                  value={newExpenseData.notes}
+                  onChange={handleAddFormChange}
+                  placeholder="Add a note..."
+                  rows="3"
+                  className="field-input field-textarea"
+                />
+              </div>
+
+              <div className="modal-actions modal-actions-right">
                 <button type="button" className="transactions-secondary-btn" onClick={() => setIsAddModalOpen(false)}>
                   Cancel
                 </button>
+                <button type="submit" className="transactions-primary-btn">Add</button>
               </div>
             </form>
           </div>

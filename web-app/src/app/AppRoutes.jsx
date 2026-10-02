@@ -6,6 +6,7 @@ import Dashboard from "../pages/Dashboard/Dashboard";
 import ExpensesPage from "../pages/Expenses/Expenses";
 import Login from "../pages/Landing/Login";
 import ChatBot from "../pages/Chat/Chat";
+import Insights from "../pages/Insights/Insights";
 import PrivacyPolicy from "../pages/Legal/PrivacyPolicy";
 import TermsOfService from "../pages/Legal/TermsOfService";
 
@@ -44,6 +45,11 @@ export default function AppRoutes({
         <Route
           path="/chatbot"
           element={<ChatBot setIsAuthenticated={setIsAuthenticated} />}
+        />
+
+        <Route
+          path="/insights"
+          element={<Insights />}
         />
 
       </Route>
