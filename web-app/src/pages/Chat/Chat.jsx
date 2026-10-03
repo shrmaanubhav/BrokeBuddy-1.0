@@ -204,31 +204,31 @@ export default function ChatBot({
       <div className="workspace-body">
         <aside className={`conversation-sidebar ${isSidebarCollapsed ? "is-collapsed" : ""}`}>
 
-<div className="workspace-brand">
-  <div className="avatar">
-    <img src={budLogo} alt="BUD logo" className="bud-logo-image" />
-  </div>
+        <div className="workspace-brand">
+          <div className="avatar">
+            <img src={budLogo} alt="BUD logo" className="bud-logo-image" />
+          </div>
 
-  {!isSidebarCollapsed && (
-    <div className="workspace-brand-copy">
-      <h1 className="title">BUD</h1>
-      <p className="status-text">Your personal finance assistant</p>
-    </div>
-  )}
+          {!isSidebarCollapsed && (
+            <div className="workspace-brand-copy">
+              <h1 className="title">BUD</h1>
+              <p className="status-text">Your personal finance assistant</p>
+            </div>
+          )}
 
-  <button
-    type="button"
-    className="sidebar-toggle sidebar-toggle--inside"
-    onClick={() => setIsSidebarCollapsed((prev) => !prev)}
-    aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-  >
-    {isSidebarCollapsed ? (
-      <PanelLeftOpen size={18} />
-    ) : (
-      <PanelLeftClose size={18} />
-    )}
-  </button>
-</div>
+          <button
+            type="button"
+            className="sidebar-toggle sidebar-toggle--inside"
+            onClick={() => setIsSidebarCollapsed((prev) => !prev)}
+            aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {isSidebarCollapsed ? (
+              <PanelLeftOpen size={18} />
+            ) : (
+              <PanelLeftClose size={18} />
+            )}
+          </button>
+        </div>
 
           <div className="sidebar-header-row">
             {!isSidebarCollapsed && <h2>Conversations</h2>}
@@ -309,7 +309,11 @@ export default function ChatBot({
                     key={msg.id}
                     className={`message-row ${msg.sender === "user" ? "user" : "bot"}`}
                   >
-                    {msg.sender === "bot" && <div className="bot-avatar">B</div>}
+                    {msg.sender === "bot" && (
+                      <div className="bot-avatar">
+                        <img src={budLogo} alt="BUD logo" className="bud-logo-image" />
+                      </div>
+                    )}
                     <div className={`message-bubble ${msg.sender}`}>
                       <p>{msg.text}</p>
                     </div>
@@ -318,7 +322,9 @@ export default function ChatBot({
 
                 {isTyping && (
                   <div className="message-row bot">
-                    <div className="bot-avatar">B</div>
+                     <div className="bot-avatar">
+                        <img src={budLogo} alt="BUD logo" className="bud-logo-image" />
+                      </div>
                     <div className="typing-bubble" aria-label="BUD is typing">
                       <span className="dot"></span>
                       <span className="dot"></span>

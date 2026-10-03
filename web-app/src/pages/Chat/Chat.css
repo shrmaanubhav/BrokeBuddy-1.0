@@ -98,8 +98,27 @@ input {
   justify-content: center;
 }
 
-.chatbot-container--compact .avatar,
 .chatbot-container--compact .empty-state-bud,
+.chatbot-container--compact .avatar{
+  width: 44px;
+  height: 44px;
+  /* border-radius: 12px; */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.8rem;
+  /* background: linear-gradient(135deg, var(--dashboard-accent-alt), var(--dashboard-accent-strong)); */
+  color: white;
+  /* box-shadow: 0 10px 24px rgba(96, 165, 250, 0.35); */
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.chatbot-container--compact .empty-state-bud{
+    width: 84px;
+    height: 84px;
+}
 .chatbot-container--compact .bot-avatar {
   width: 34px;
   height: 34px;
@@ -114,6 +133,14 @@ input {
   box-shadow: 0 10px 24px rgba(96, 165, 250, 0.35);
   flex-shrink: 0;
   overflow: hidden;
+}
+
+.bot-avatar {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .bud-logo-image {
