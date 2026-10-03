@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { PanelLeftClose, PanelLeftOpen, Plus } from "lucide-react";
 import api from "../../lib/api";
+import budLogo from "../../assets/bud_logo.png";
 import "./Chat.css";
 
 const quickPrompts = [
@@ -105,7 +106,9 @@ export default function ChatBot({
     return (
       <div className="chatbot-container chatbot-container--compact">
         <header className="chat-header">
-          <div className="avatar">B</div>
+          <div className="avatar">
+            <img src={budLogo} alt="BUD logo" className="bud-logo-image" />
+          </div>
           <div className="chat-header-copy">
             <h1 className="title">BUD</h1>
             <p className="status-text">Your personal finance assistant</p>
@@ -119,7 +122,9 @@ export default function ChatBot({
 
         {!hasConversation ? (
           <div className="empty-state">
-            <div className="empty-state-bud">B</div>
+            <div className="empty-state-bud">
+              <img src={budLogo} alt="BUD logo" className="bud-logo-image" />
+            </div>
             <h2>Hi, I’m BUD.</h2>
             <p>{pageCopy}</p>
 
@@ -143,7 +148,11 @@ export default function ChatBot({
                 key={msg.id}
                 className={`message-row ${msg.sender === "user" ? "user" : "bot"}`}
               >
-                {msg.sender === "bot" && <div className="bot-avatar">B</div>}
+                {msg.sender === "bot" && (
+                  <div className="bot-avatar">
+                    <img src={budLogo} alt="BUD logo" className="bud-logo-image" />
+                  </div>
+                )}
                 <div className={`message-bubble ${msg.sender}`}>
                   <p>{msg.text}</p>
                 </div>
@@ -152,7 +161,9 @@ export default function ChatBot({
 
             {isTyping && (
               <div className="message-row bot">
-                <div className="bot-avatar">B</div>
+                <div className="bot-avatar">
+                  <img src={budLogo} alt="BUD logo" className="bud-logo-image" />
+                </div>
                 <div className="typing-bubble" aria-label="BUD is typing">
                   <span className="dot"></span>
                   <span className="dot"></span>
@@ -194,7 +205,9 @@ export default function ChatBot({
         <aside className={`conversation-sidebar ${isSidebarCollapsed ? "is-collapsed" : ""}`}>
 
 <div className="workspace-brand">
-  <div className="avatar">B</div>
+  <div className="avatar">
+    <img src={budLogo} alt="BUD logo" className="bud-logo-image" />
+  </div>
 
   {!isSidebarCollapsed && (
     <div className="workspace-brand-copy">
@@ -265,7 +278,9 @@ export default function ChatBot({
           {!hasConversation ? (
             <div className="workspace-empty-state">
               <div className="workspace-empty-panel">
-                <div className="empty-state-bud">B</div>
+                <div className="empty-state-bud">
+                  <img src={budLogo} alt="BUD logo" className="bud-logo-image" />
+                </div>
                 <h2>Hi, I’m BUD</h2>
                 <p className="empty-kicker">Your personal finance assistant</p>
                 <p className="empty-description">
