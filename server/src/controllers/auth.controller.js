@@ -1,10 +1,10 @@
 import * as authService from "../services/auth.service.js";
 
-export const googleCallback = async (req, res) => {
+export const createGoogleCallback = (authServiceApi = authService) => async (req, res) => {
   try {
     const { profile, refreshToken } = req.user;
 
-    const user = await authService.findOrCreateGoogleUser({
+    const user = await authServiceApi.findOrCreateGoogleUser({
       googleId: profile.id,
       email: profile.emails[0].value,
       name: profile.displayName,
@@ -12,7 +12,7 @@ export const googleCallback = async (req, res) => {
       refreshToken,
     });
 
-    const token = authService.generateUserToken(user);
+    const token = authServiceApi.generateUserToken(user);
 
     res.cookie("token", token, {
       httpOnly: true,
@@ -21,13 +21,15 @@ export const googleCallback = async (req, res) => {
       maxAge: 60 * 60 * 1000,
     });
 
-    return res.redirect(process.env.FRONTEND_URL);
+    return res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
   } catch (err) {
     console.error(err);
 
     return res.redirect(`${process.env.FRONTEND_URL}/login`);
   }
 };
+
+export const googleCallback = createGoogleCallback();
 
 export const logout = (req, res) => {
   res.clearCookie("token", {

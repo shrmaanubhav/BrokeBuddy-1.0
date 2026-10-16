@@ -3,5 +3,6 @@ node_modules
 .env
 .env.docker
 cloud-env.yaml
-
+private
 /src/generated/prisma
+    
