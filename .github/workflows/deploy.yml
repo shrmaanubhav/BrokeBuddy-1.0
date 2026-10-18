@@ -58,6 +58,7 @@ jobs:
             842190336619.dkr.ecr.ap-southeast-2.amazonaws.com/brokebuddy-server:latest
 
       - name: Deploy to EC2 through SSM
+        id: deploy
         shell: bash
         env:
           IMAGE_TAG: ${{ github.sha }}
@@ -68,37 +69,117 @@ jobs:
           set -eu
           cd /home/ssm-user/BrokeBuddy-1.0
 
-          export SERVER_IMAGE="${ECR_REGISTRY}/brokebuddy-server:${IMAGE_TAG}"
-          export PYTHON_IMAGE="${ECR_REGISTRY}/brokebuddy-python:${IMAGE_TAG}"
+          REGISTRY="${ECR_REGISTRY}"
+          SERVER_CONTAINER="brokebuddy-server"
+          PYTHON_CONTAINER="brokebuddy-python"
 
+          # Record the currently deployed image references for rollback.
+          PREVIOUS_SERVER_IMAGE=\$(sudo docker inspect -f '{{.Config.Image}}' "\$SERVER_CONTAINER")
+          PREVIOUS_PYTHON_IMAGE=\$(sudo docker inspect -f '{{.Config.Image}}' "\$PYTHON_CONTAINER")
+
+          echo "Previous server image: \$PREVIOUS_SERVER_IMAGE"
+          echo "Previous Python image: \$PREVIOUS_PYTHON_IMAGE"
+
+          # Authenticate Docker with ECR.
           aws ecr get-login-password --region "${AWS_REGION}" |
-            sudo docker login --username AWS --password-stdin "${ECR_REGISTRY}"
+            sudo docker login --username AWS --password-stdin "\$REGISTRY"
 
-          sudo --preserve-env=SERVER_IMAGE,PYTHON_IMAGE docker compose \
-            -f docker-compose.yml \
-            -f docker-compose.prod.yml pull
+          health_check() {
+            for i in \$(seq 1 36); do
+              SERVER_STATUS=\$(sudo docker inspect -f '{{.State.Health.Status}}' "\$SERVER_CONTAINER" 2>/dev/null || true)
+              PYTHON_STATUS=\$(sudo docker inspect -f '{{.State.Health.Status}}' "\$PYTHON_CONTAINER" 2>/dev/null || true)
 
-          sudo --preserve-env=SERVER_IMAGE,PYTHON_IMAGE docker compose \
-            -f docker-compose.yml \
-            -f docker-compose.prod.yml \
-            up -d --no-build --remove-orphans
+              echo "Health check \$i/36: server=\$SERVER_STATUS, python=\$PYTHON_STATUS"
 
-          for i in \$(seq 1 36); do
-            SERVER_STATUS=\$(sudo docker inspect -f '{{.State.Health.Status}}' brokebuddy-server 2>/dev/null || true)
-            PYTHON_STATUS=\$(sudo docker inspect -f '{{.State.Health.Status}}' brokebuddy-python 2>/dev/null || true)
+              if [ "\$SERVER_STATUS" = "healthy" ] && [ "\$PYTHON_STATUS" = "healthy" ]; then
+                echo "Both backend containers are healthy."
+                return 0
+              fi
 
-            if [ "\$SERVER_STATUS" = "healthy" ] && [ "\$PYTHON_STATUS" = "healthy" ]; then
-              echo "Both backend containers are healthy."
-              exit 0
+              sleep 5
+            done
+
+            return 1
+          }
+
+          rollback() {
+            echo "ROLLBACK_STARTED: restoring previous images"
+
+            export SERVER_IMAGE="\$PREVIOUS_SERVER_IMAGE"
+            export PYTHON_IMAGE="\$PREVIOUS_PYTHON_IMAGE"
+
+            if sudo --preserve-env=SERVER_IMAGE,PYTHON_IMAGE docker compose \
+              -f docker-compose.yml -f docker-compose.prod.yml pull &&
+               sudo --preserve-env=SERVER_IMAGE,PYTHON_IMAGE docker compose \
+              -f docker-compose.yml -f docker-compose.prod.yml \
+              up -d --no-build --remove-orphans &&
+               health_check; then
+              echo "ROLLBACK_RESULT=SUCCESS"
+              return 0
             fi
 
-            sleep 5
-          done
+            echo "ROLLBACK_RESULT=FAILED"
+            sudo docker ps -a || true
+            sudo docker logs --tail 80 "\$SERVER_CONTAINER" || true
+            sudo docker logs --tail 80 "\$PYTHON_CONTAINER" || true
+            return 1
+          }
 
-          sudo docker ps -a
-          sudo docker logs --tail 80 brokebuddy-server || true
-          sudo docker logs --tail 80 brokebuddy-python || true
-          echo "Deployment health check failed."
+          # Use the current commit's immutable image tags.
+          export SERVER_IMAGE="\${REGISTRY}/brokebuddy-server:${IMAGE_TAG}"
+          export PYTHON_IMAGE="\${REGISTRY}/brokebuddy-python:${IMAGE_TAG}"
+
+          echo "Pulling new images..."
+          if ! sudo --preserve-env=SERVER_IMAGE,PYTHON_IMAGE docker compose \
+            -f docker-compose.yml -f docker-compose.prod.yml pull; then
+            echo "DEPLOYMENT_RESULT=FAILED_PULL"
+            exit 1
+          fi
+
+          echo "Starting new deployment..."
+          if ! sudo --preserve-env=SERVER_IMAGE,PYTHON_IMAGE docker compose \
+            -f docker-compose.yml -f docker-compose.prod.yml \
+            up -d --no-build --remove-orphans; then
+            echo "DEPLOYMENT_RESULT=FAILED_START"
+            echo "New deployment failed. Rolling back..."
+
+            if rollback; then
+              echo "Previous deployment restored successfully."
+            else
+              echo "CRITICAL: deployment and rollback both failed."
+            fi
+
+            exit 1
+          fi
+
+          echo "Waiting for both containers to become healthy..."
+          if health_check; then
+            echo "DEPLOYMENT_RESULT=SUCCESS"
+
+            # Remove unused local images only after successful deployment.
+            echo "Removing unused local Docker images..."
+            sudo docker image prune -af
+
+            echo "Final disk usage:"
+            df -h /
+            sudo docker system df
+            exit 0
+          fi
+
+          echo "DEPLOYMENT_RESULT=FAILED_HEALTH_CHECK"
+          echo "Deployment failed health checks. Rolling back now..."
+
+          sudo docker ps -a || true
+          sudo docker logs --tail 80 "\$SERVER_CONTAINER" || true
+          sudo docker logs --tail 80 "\$PYTHON_CONTAINER" || true
+
+          if rollback; then
+            echo "Previous deployment restored successfully."
+          else
+            echo "CRITICAL: deployment and rollback both failed."
+          fi
+
+          # Keep unused images for diagnosis and recovery after failure.
           exit 1
           EOF
           )
