@@ -16,9 +16,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-and-push:
-    name: Build and Push Backend Images
+  build-and-deploy:
+    name: Build, Push and Deploy Backend
     runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      ECR_REGISTRY: 842190336619.dkr.ecr.ap-southeast-2.amazonaws.com
+      EC2_INSTANCE_ID: i-0750821d04cddc66c
 
     steps:
       - name: Checkout repository
@@ -32,13 +37,7 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Login to Amazon ECR
-        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Set image tags
-        run: |
-          echo "IMAGE_TAG=${GITHUB_SHA}" >> "$GITHUB_ENV"
-          echo "ECR_REGISTRY=842190336619.dkr.ecr.ap-southeast-2.amazonaws.com" >> "$GITHUB_ENV"
 
       - name: Build and push Python image
         uses: docker/build-push-action@v6
@@ -57,3 +56,90 @@ jobs:
           tags: |
             842190336619.dkr.ecr.ap-southeast-2.amazonaws.com/brokebuddy-server:${{ github.sha }}
             842190336619.dkr.ecr.ap-southeast-2.amazonaws.com/brokebuddy-server:latest
+
+      - name: Deploy to EC2 through SSM
+        shell: bash
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          REMOTE_COMMAND=$(cat <<EOF
+          set -eu
+          cd /home/ssm-user/BrokeBuddy-1.0
+
+          export SERVER_IMAGE="${ECR_REGISTRY}/brokebuddy-server:${IMAGE_TAG}"
+          export PYTHON_IMAGE="${ECR_REGISTRY}/brokebuddy-python:${IMAGE_TAG}"
+
+          aws ecr get-login-password --region "${AWS_REGION}" |
+            sudo docker login --username AWS --password-stdin "${ECR_REGISTRY}"
+
+          sudo --preserve-env=SERVER_IMAGE,PYTHON_IMAGE docker compose \
+            -f docker-compose.yml \
+            -f docker-compose.prod.yml pull
+
+          sudo --preserve-env=SERVER_IMAGE,PYTHON_IMAGE docker compose \
+            -f docker-compose.yml \
+            -f docker-compose.prod.yml \
+            up -d --no-build --remove-orphans
+
+          for i in \$(seq 1 36); do
+            SERVER_STATUS=\$(sudo docker inspect -f '{{.State.Health.Status}}' brokebuddy-server 2>/dev/null || true)
+            PYTHON_STATUS=\$(sudo docker inspect -f '{{.State.Health.Status}}' brokebuddy-python 2>/dev/null || true)
+
+            if [ "\$SERVER_STATUS" = "healthy" ] && [ "\$PYTHON_STATUS" = "healthy" ]; then
+              echo "Both backend containers are healthy."
+              exit 0
+            fi
+
+            sleep 5
+          done
+
+          sudo docker ps -a
+          sudo docker logs --tail 80 brokebuddy-server || true
+          sudo docker logs --tail 80 brokebuddy-python || true
+          echo "Deployment health check failed."
+          exit 1
+          EOF
+          )
+
+          PARAMETERS=$(jq -n --arg command "$REMOTE_COMMAND" '{commands: [$command]}')
+
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "$EC2_INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --comment "BrokeBuddy deployment ${GITHUB_SHA}" \
+            --parameters "$PARAMETERS" \
+            --query 'Command.CommandId' \
+            --output text)
+
+          echo "SSM command ID: $COMMAND_ID"
+
+          STATUS="Pending"
+
+          for i in $(seq 1 60); do
+            STATUS=$(aws ssm get-command-invocation \
+              --command-id "$COMMAND_ID" \
+              --instance-id "$EC2_INSTANCE_ID" \
+              --query 'Status' \
+              --output text 2>/dev/null || true)
+
+            case "$STATUS" in
+              Success|Failed|Cancelled|TimedOut|Cancelling)
+                break
+                ;;
+            esac
+
+            sleep 10
+          done
+
+          aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$EC2_INSTANCE_ID" \
+            --query '{Status:Status,Output:StandardOutputContent,Errors:StandardErrorContent}' \
+            --output json || true
+
+          if [ "$STATUS" != "Success" ]; then
+            echo "Deployment failed or timed out. SSM status: $STATUS"
+            exit 1
+          fi
